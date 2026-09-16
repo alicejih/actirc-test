@@ -20,27 +20,6 @@
       filter: blur(25px) brightness(0.85); transform: scale(1.05); z-index: -2;
     }
 
-    /* API 設定提示列 */
-    #apiSettingBanner {
-      background: rgba(26, 115, 232, 0.95);
-      color: #fff;
-      padding: 8px 16px;
-      font-size: 13px;
-      text-align: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      position: sticky;
-      top: 0;
-      z-index: 10000;
-    }
-    #apiSettingBanner a, #apiSettingBanner button {
-      color: #ffe082;
-      font-weight: bold;
-      text-decoration: underline;
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 13px;
-    }
 
     .main-wrapper {
       display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
@@ -160,11 +139,6 @@
 </head>
 <body>
 
-  <!-- API 設定列 -->
-  <div id="apiSettingBanner">
-    🔗 系統連線狀態：<span id="apiStatusText">尚未設定 GAS API 網址（目前為離線展示模式）</span>
-    <button onclick="promptApiUrl()">[點此設定 API 網址]</button>
-  </div>
 
   <!-- 浮動通知容器 -->
   <div id="toastBox"></div>
@@ -371,30 +345,8 @@
     let globalDashboardData = null;
     let categoryList = [];
 
-    // GAS API 網址設定
-    let API_URL = localStorage.getItem("FALOCO_GAS_URL") || "";
-
-    function promptApiUrl() {
-      const input = prompt("請貼上您的 Google Apps Script 網頁應用程式網址 (Web App URL)：", API_URL);
-      if (input !== null) {
-        API_URL = input.trim();
-        localStorage.setItem("FALOCO_GAS_URL", API_URL);
-        updateApiStatus();
-        loadCategories();
-      }
-    }
-
-    function updateApiStatus() {
-      const statusText = document.getElementById("apiStatusText");
-      if (API_URL && API_URL.startsWith("http")) {
-        statusText.textContent = "已連線正式 API (" + API_URL.substring(0, 35) + "...)";
-        statusText.style.color = "#a7f3d0";
-      } else {
-        statusText.textContent = "尚未設定 GAS API 網址（目前為展示模擬模式）";
-        statusText.style.color = "#fef08a";
-      }
-    }
-    updateApiStatus();
+    // 永久綁定正式 GAS API 網址
+    const API_URL = "https://script.google.com/macros/s/AKfycbw2bmmDg25Qa276KICvl9lB--nkDRPeUb-K7tcJ6aa3Dclr2SiZP-C3ts2JM6-zwT-H/exec";
 
     // 核心 API 請求函數
     async function callGasApi(action, payload = {}) {

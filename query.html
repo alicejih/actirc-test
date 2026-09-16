@@ -133,8 +133,8 @@
   </div>
 
   <script>
-    let currentSearchData = null;
-    let API_URL = localStorage.getItem("FALOCO_GAS_URL") || "";
+    // 永久綁定正式 GAS API 網址
+    const API_URL = "https://script.google.com/macros/s/AKfycbw2bmmDg25Qa276KICvl9lB--nkDRPeUb-K7tcJ6aa3Dclr2SiZP-C3ts2JM6-zwT-H/exec";
 
     function maskIdNumber(idStr) {
       if (!idStr) return "-";
