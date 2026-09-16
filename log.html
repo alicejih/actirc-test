@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>自主登錄課程時數 - 輔仁大學原資中心</title>
+  
+  <style>
+    body, html {
+      margin: 0; padding: 0; min-height: 100%;
+      font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+      background-color: #f4f7fc;
+      color: #202124;
+    }
+
+    body::before {
+      content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-image: url('https://irc.fju.edu.tw/resources/20260615102746493.jpg');
+      background-size: cover; background-position: center;
+      filter: blur(25px) brightness(0.85); transform: scale(1.05); z-index: -2;
+    }
+
+    .main-wrapper {
+      display: flex; justify-content: center; align-items: flex-start;
+      padding: 30px 15px; box-sizing: border-box; min-height: 100vh;
+    }
+
+    .card { 
+      background: #ffffff; 
+      padding: 35px; 
+      border-radius: 16px; 
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+      width: 95% !important; 
+      max-width: 950px !important; 
+      margin: 15px auto !important; 
+      box-sizing: border-box; 
+    }
+    
+    .status-msg { margin: 15px 0; padding: 15px; border-radius: 10px; font-size: 16px; font-weight: bold; display: none; text-align: center; line-height: 1.5; }
+    .msg-error { background-color: #fce8e6; color: #c5221f; border: 1px solid #fad2cf; }
+    .msg-success { background-color: #e6f4ea; color: #137333; border: 2px solid #34a853; box-shadow: 0 2px 10px rgba(52,168,83,0.15); }
+    
+    .auth-section { 
+      background: #e8f0fe; 
+      padding: 20px; 
+      border-radius: 12px; 
+      margin-bottom: 25px; 
+      border: 1px solid #d2e3fc; 
+    }
+    .auth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 30px; row-gap: 20px; }
+    .field-block { display: flex; flex-direction: column; }
+    .field-label { font-size: 14px; color: #3c4043; font-weight: bold; margin-bottom: 8px; }
+    .full-width-row { grid-column: span 2; }
+    
+    input[type="text"], input[type="number"], input[type="datetime-local"], select { 
+      width: 100%; padding: 12px 14px; background: #ffffff; border: 1px solid #dadce0; border-radius: 8px; font-size: 15px; box-sizing: border-box; outline: none; transition: all 0.2s ease;
+    }
+    input:focus, select:focus { border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
+    
+    input[type="file"] { padding: 12px; background: #ffffff; border: 2px dashed #bcc1c6; border-radius: 8px; cursor: pointer; box-sizing: border-box; width: 100%; }
+    input[type="file"]:hover { border-color: #1a73e8; }
+
+    .btn-submit {
+      background-color: #1a73e8; color: white; border: none; padding: 13px 20px;
+      border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;
+      transition: 0.2s; text-align: center; width: 100%;
+    }
+    .btn-submit:hover { background-color: #1557b0; }
+    .btn-success-state { background-color: #34a853 !important; color: white !important; font-size: 18px !important; font-weight: bold !important; cursor: default !important; border: none !important; box-shadow: 0 4px 12px rgba(52,168,83,0.3) !important; }
+
+    @media (max-width: 768px) {
+      .form-grid, .auth-grid { grid-template-columns: 1fr !important; }
+      .full-width-row { grid-column: span 1 !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="main-wrapper">
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #f1f3f4; padding-bottom: 15px;">
+        <h2 style="margin: 0; font-size: 22px; color: #202124;">自主登錄課程時數</h2>
+        <a href="index.html" style="color: #1a73e8; text-decoration: none; font-size: 15px; font-weight: bold;">回首頁</a>
+      </div>
+
+      <div id="topStatusMessage" class="status-msg"></div>
+
+      <div class="auth-section">
+        <span style="font-size: 14px; color: #1967d2; font-weight: bold; display: block; margin-bottom: 12px;">💡 填報人身分驗證</span>
+        <div class="auth-grid">
+          <div class="field-block">
+            <span class="field-label">身分證字號</span>
+            <input type="text" id="idNumber" placeholder="請輸入填報人身分證字號" style="text-transform: uppercase;">
+          </div>
+          <div class="field-block">
+            <span class="field-label">學員姓名</span>
+            <input type="text" id="userName" placeholder="請輸入學員完整姓名">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field-block">
+          <span class="field-label">開課單位：</span>
+          <input type="text" id="courseUnit" placeholder="請輸入辦理/開課單位名稱">
+        </div>
+        <div class="field-block">
+          <span class="field-label">課程名稱：</span>
+          <input type="text" id="courseName" placeholder="請輸入完整的課程或會議名稱">
+        </div>
+        <div class="field-block">
+          <span class="field-label">課程分類 (一)：</span>
+          <select id="courseClass1" onchange="updateSubCategory()">
+            <option value="">載入中...</option>
+          </select>
+        </div>
+        <div class="field-block">
+          <span class="field-label">課程分類 (二)：</span>
+          <select id="courseClass2">
+            <option value="">請先選擇分類(一)</option>
+          </select>
+        </div>
+        <div class="field-block">
+          <span class="field-label">活動開始時間：</span>
+          <input type="datetime-local" id="startTime">
+        </div>
+        <div class="field-block">
+          <span class="field-label">活動結束時間：</span>
+          <input type="datetime-local" id="endTime">
+        </div>
+        <div class="field-block">
+          <span class="field-label">申請研習時數：</span>
+          <input type="number" id="courseHours" placeholder="請輸入研習時數 (例如: 3)" step="0.5" min="0">
+        </div>
+        <div class="field-block full-width-row">
+          <span class="field-label">上傳佐證圖片證明：</span>
+          <input type="file" id="evidenceFile" accept="image/*">
+        </div>
+      </div>
+
+      <div id="bottomStatusMessage" class="status-msg"></div>
+
+      <button onclick="processAndSubmit()" id="btnSubmit" class="btn-submit" style="margin-top: 25px; width: 100%;">提交資料</button>
+
+      <a href="index.html" id="btnHome" style="
+          display: block; 
+          text-align: center; 
+          text-decoration: none; 
+          color: #5f6368; 
+          font-weight: bold; 
+          font-size: 16px; 
+          margin-top: 15px; 
+          padding: 14px; 
+          border-radius: 10px; 
+          border: 2px solid #eef0f2; 
+          background: #ffffff; 
+          box-sizing: border-box;">
+          返回首頁
+        </a>
+    </div>
+  </div>
+
+  <script>
+    let categoryList = []; 
+    let API_URL = localStorage.getItem("FALOCO_GAS_URL") || "";
+
+    window.onload = function() {
+      const today = new Date().toISOString().split('T')[0] + "T09:00";
+      document.getElementById('startTime').value = today;
+      document.getElementById('endTime').value = today;
+
+      loadCategories();
+    };
+
+    async function loadCategories() {
+      if (API_URL) {
+        try {
+          const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "getCourses" })
+          });
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            categoryList = data;
+            renderCategorySelect();
+            return;
+          }
+        } catch (e) {
+          console.warn("載入分類失敗：", e);
+        }
+      }
+
+      // 預設分類
+      categoryList = [
+        { mainCategory: "文化與族群知能", subCategories: ["原住民族傳統文化", "當代族群議題"] },
+        { mainCategory: "學生輔導與陪伴", subCategories: ["學習與職涯支持", "心理與生活適應"] },
+        { mainCategory: "行政與法規知能", subCategories: ["專案執行與管考", "原民政策法規"] }
+      ];
+      renderCategorySelect();
+    }
+
+    function renderCategorySelect() {
+      const class1Select = document.getElementById('courseClass1');
+      class1Select.innerHTML = '<option value="">-- 請選擇分類 --</option>';
+      categoryList.forEach(function(item) {
+        let opt = document.createElement('option');
+        opt.value = item.mainCategory; 
+        opt.innerText = item.mainCategory; 
+        class1Select.appendChild(opt);
+      });
+    }
+
+    function updateSubCategory() {
+      const cat1Value = document.getElementById('courseClass1').value;
+      const class2Select = document.getElementById('courseClass2');
+      class2Select.innerHTML = ""; 
+
+      if (cat1Value) {
+        let matchedItem = categoryList.find(item => item.mainCategory === cat1Value);
+        if (matchedItem && matchedItem.subCategories.length > 0) {
+          matchedItem.subCategories.forEach(function(cat2) {
+            let opt = document.createElement('option');
+            opt.value = cat2;
+            opt.innerText = cat2;
+            class2Select.appendChild(opt);
+          });
+          return;
+        }
+      }
+      class2Select.innerHTML = '<option value="">請先選擇分類(一)</option>';
+    }
+
+    function showUIMessage(text, type) {
+      const topDiv = document.getElementById('topStatusMessage');
+      const bottomDiv = document.getElementById('bottomStatusMessage');
+      
+      topDiv.innerText = text;
+      bottomDiv.innerText = text;
+      
+      if (type === 'success') {
+        topDiv.className = 'status-msg msg-success';
+        bottomDiv.className = 'status-msg msg-success';
+      } else {
+        topDiv.className = 'status-msg msg-error';
+        bottomDiv.className = 'status-msg msg-error';
+      }
+      
+      topDiv.style.display = 'block';
+      bottomDiv.style.display = 'block';
+      topDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    async function processAndSubmit() {
+      const idNo = document.getElementById('idNumber').value.trim().toUpperCase();
+      const name = document.getElementById('userName').value.trim();
+      const unit = document.getElementById('courseUnit').value.trim();
+      const c1 = document.getElementById('courseClass1').value;
+      const c2 = document.getElementById('courseClass2').value;
+      const cName = document.getElementById('courseName').value.trim();
+      const sTime = document.getElementById('startTime').value;
+      const eTime = document.getElementById('endTime').value;
+      const cHours = document.getElementById('courseHours').value.trim();
+      const fileInput = document.getElementById('evidenceFile');
+      const btn = document.getElementById('btnSubmit');
+
+      if (!idNo || !name || !unit || !c1 || !cName || !cHours) {
+        showUIMessage('⚠️ 請完整填寫所有欄位與分類選擇！', 'error');
+        return; 
+      }
+
+      const combinedCategory = c1 + " > " + c2;
+      let formattedStart = sTime ? sTime.replace('T', ' ') : '-';
+      let formattedEnd = eTime ? eTime.replace('T', ' ') : '-';
+
+      btn.disabled = true;
+      btn.innerText = "資料送出中，請稍候...";
+
+      let fileData = null;
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        fileData = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve({
+            base64: e.target.result.split(',')[1],
+            fileName: file.name,
+            mimeType: file.type
+          });
+          reader.readAsDataURL(file);
+        });
+      }
+
+      if (API_URL) {
+        try {
+          const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              action: "logHoursData",
+              idNumber: idNo,
+              userName: name,
+              courseUnit: unit,
+              courseClass: combinedCategory,
+              courseName: cName,
+              startTime: formattedStart,
+              endTime: formattedEnd,
+              hours: cHours,
+              fileData: fileData
+            })
+          });
+          const result = await res.json();
+          if (result.status === "success") {
+            btn.className = "btn-submit btn-success-state";
+            btn.innerText = "🎉 提交完成！資料已同步寫入後端";
+            showUIMessage('🎉 研習時數資料已成功送出！請確認您的工作表，或可直接關閉此網頁。', 'success');
+            document.querySelectorAll('input, select').forEach(el => el.disabled = true);
+          } else {
+            btn.disabled = false;
+            btn.innerText = "提交資料";
+            showUIMessage("❌ 提交失敗：" + (result.message || "未知錯誤"), "error");
+          }
+        } catch (err) {
+          btn.disabled = false;
+          btn.innerText = "提交資料";
+          showUIMessage("❌ 網路連線錯誤：" + err.toString(), "error");
+        }
+      } else {
+        // 展示模式
+        await new Promise(r => setTimeout(r, 600));
+        btn.className = "btn-submit btn-success-state";
+        btn.innerText = "🎉 提交完成！【展示模式】";
+        showUIMessage('🎉 【展示模式】研習時數資料已成功送出！串接正式 GAS API 後將寫入 Google 試算表。', 'success');
+        document.querySelectorAll('input, select').forEach(el => el.disabled = true);
+      }
+    }
+  </script>
+</body>
+</html>

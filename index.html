@@ -3,753 +3,996 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>輔仁大學原資中心 - Faloco 增能護照管理平臺</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <title>法路祖部落研習時數 - 輔仁大學原資中心</title>
+  
   <style>
-    body { font-family: 'Noto Sans TC', sans-serif; }
-    @media print {
-      .no-print { display: none !important; }
-      .print-only { display: block !important; }
-      body { background: white !important; color: black !important; }
+    body, html {
+      margin: 0; padding: 0; min-height: 100%;
+      font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+      background-color: #f4f7fc;
+      color: #202124;
+    }
+
+    body::before {
+      content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-image: url('https://irc.fju.edu.tw/resources/20260615102746493.jpg');
+      background-size: cover; background-position: center;
+      filter: blur(25px) brightness(0.85); transform: scale(1.05); z-index: -2;
+    }
+
+    /* API 設定提示列 */
+    #apiSettingBanner {
+      background: rgba(26, 115, 232, 0.95);
+      color: #fff;
+      padding: 8px 16px;
+      font-size: 13px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      position: sticky;
+      top: 0;
+      z-index: 10000;
+    }
+    #apiSettingBanner a, #apiSettingBanner button {
+      color: #ffe082;
+      font-weight: bold;
+      text-decoration: underline;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .main-wrapper {
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      padding: 30px 15px; box-sizing: border-box; min-height: 100vh;
+    }
+
+    .card {
+      background: #ffffff; padding: 30px; border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      width: 100%; max-width: 960px; box-sizing: border-box;
+    }
+
+    /* 輸入框與按鈕 */
+    input[type="text"], input[type="date"], input[type="datetime-local"], input[type="number"], select {
+      width: 100%; padding: 12px 14px; margin-top: 6px;
+      border: 1px solid #dadce0; border-radius: 8px; font-size: 15px;
+      box-sizing: border-box; outline: none; transition: 0.2s; background: #fff;
+    }
+    input:focus, select:focus { border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.15); }
+    
+    .btn-primary {
+      background-color: #1a73e8; color: white; border: none; padding: 13px 20px;
+      border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;
+      transition: 0.2s; text-align: center; display: inline-block;
+    }
+    .btn-primary:hover { background-color: #1557b0; }
+    .btn-success { background-color: #1e8e3e; }
+    .btn-success:hover { background-color: #137333; }
+    .btn-secondary { background-color: #f1f3f4; color: #3c4043; border: 1px solid #dadce0; }
+    .btn-secondary:hover { background-color: #e8eaed; }
+    .btn-danger { background-color: #d93025; color: white; }
+    .btn-danger:hover { background-color: #b31412; }
+
+    /* 身分卡片 */
+    .profile-bar {
+      background: linear-gradient(135deg, #1a73e8, #185abc);
+      color: white; padding: 22px 25px; border-radius: 12px; margin-bottom: 25px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+    }
+    .profile-info h3 { margin: 0 0 6px 0; font-size: 22px; letter-spacing: 0.5px; }
+    .profile-info p { margin: 0; font-size: 14px; opacity: 0.9; }
+    .hours-pill {
+      background: rgba(255,255,255,0.2); padding: 8px 18px; border-radius: 30px;
+      font-size: 15px; font-weight: bold; backdrop-filter: blur(5px);
+    }
+
+    /* 頁籤切換 */
+    .tabs-nav {
+      display: flex; border-bottom: 2px solid #e8eaed; margin-bottom: 22px; gap: 10px;
+    }
+    .tab-btn {
+      padding: 12px 20px; background: none; border: none; border-bottom: 3px solid transparent;
+      font-size: 16px; font-weight: bold; color: #5f6368; cursor: pointer; transition: 0.2s;
+    }
+    .tab-btn.active { color: #1a73e8; border-bottom-color: #1a73e8; }
+
+    /* 申報清單表格 */
+    .records-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    .records-table th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #dadce0; color: #3c4043; }
+    .records-table td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    .badge {
+      padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block;
+    }
+    .badge-pending { background: #fef7e0; color: #b06000; }
+    .badge-approved { background: #e6f4ea; color: #137333; }
+    .badge-rejected { background: #fce8e6; color: #c5221f; }
+
+    .action-btn-sm {
+      padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: bold;
+      border: none; cursor: pointer; margin-right: 5px;
+    }
+
+    /* 彈窗 Modal */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); z-index: 999; display: none;
+      justify-content: center; align-items: center; padding: 15px; box-sizing: border-box;
+    }
+    .modal-box {
+      background: #fff; width: 100%; max-width: 600px; border-radius: 14px;
+      padding: 25px; max-height: 90vh; overflow-y: auto; box-sizing: border-box;
+    }
+
+    /* 質感 Toast 提示泡泡 */
+    #toastBox {
+      position: fixed; top: 50px; left: 50%; transform: translateX(-50%);
+      z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+    }
+    .toast-item {
+      pointer-events: auto; padding: 14px 24px; border-radius: 30px; font-size: 15px;
+      font-weight: bold; box-shadow: 0 6px 20px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 10px;
+      animation: toastSlideDown 0.3s ease-out forwards;
+    }
+    .toast-success { background-color: #1e8e3e; color: white; }
+    .toast-error { background-color: #d93025; color: white; }
+    .toast-info { background-color: #1a73e8; color: white; }
+
+    @keyframes toastSlideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .sub-nav-links {
+      margin-top: 20px; text-align: center; font-size: 13px; color: #5f6368;
+    }
+    .sub-nav-links a {
+      color: #1a73e8; text-decoration: none; margin: 0 8px; font-weight: bold;
+    }
+    .sub-nav-links a:hover { text-decoration: underline; }
+
+    @media (max-width: 768px) {
+      .card { padding: 20px 15px; }
+      .profile-bar { flex-direction: column; align-items: flex-start; }
+      .records-table { display: block; overflow-x: auto; }
     }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center">
+<body>
 
-  <!-- ===============================
-       全域設定通知列 (若尚未填入 GAS URL)
-       =============================== -->
-  <div id="gasWarningBanner" class="w-full bg-amber-500/20 border-b border-amber-500/40 text-amber-300 text-xs py-2 px-4 text-center font-medium no-print">
-    ⚠️ 目前使用「前端展示模式」。請在設定或程式中填入你的 GAS Web App URL 即可真正連線試算表！
-    <button onclick="promptForGasUrl()" class="ml-2 underline font-bold hover:text-white">點此設定 API 網址</button>
+  <!-- API 設定列 -->
+  <div id="apiSettingBanner">
+    🔗 系統連線狀態：<span id="apiStatusText">尚未設定 GAS API 網址（目前為離線展示模式）</span>
+    <button onclick="promptApiUrl()">[點此設定 API 網址]</button>
   </div>
 
-  <!-- 頂部 Header -->
-  <header class="w-full max-w-4xl px-4 py-6 flex items-center justify-between no-print">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-rose-600 flex items-center justify-center font-black text-xl text-white shadow-lg shadow-amber-500/30">
-        F
-      </div>
-      <div>
-        <h1 class="text-lg font-bold text-white leading-tight">輔仁大學原住民族學生資源中心</h1>
-        <p class="text-xs text-amber-400 font-medium tracking-wide">Faloco 增能護照・研習時數管理平臺</p>
-      </div>
-    </div>
+  <!-- 浮動通知容器 -->
+  <div id="toastBox"></div>
 
-    <!-- 登入後狀態 -->
-    <div id="userHeaderBar" class="hidden items-center gap-3">
-      <div class="text-right">
-        <div id="headerUserName" class="text-sm font-bold text-white"></div>
-        <div id="headerUserUnit" class="text-xs text-slate-400"></div>
+  <div class="main-wrapper">
+    <!-- 1. 登入核對卡片 -->
+    <div id="loginCard" class="card" style="max-width: 480px; text-align: center;">
+      <h2 style="margin: 0 0 8px 0; color: #1a73e8; font-size: 24px;">法路祖部落研習時數</h2>
+      <h3 style="margin: 0 0 20px 0; color: #3c4043; font-size: 18px;">學員身分認證登入</h3>
+      <p style="color: #666; font-size: 14px; margin-bottom: 25px;">請輸入身分證字號與出生日期以檢視與管理您的個人研習時數</p>
+
+      <div style="text-align: left; margin-bottom: 16px;">
+        <label style="font-size: 13px; font-weight: bold; color: #444;">身分證字號</label>
+        <input type="text" id="authIdNumber" placeholder="例如：A123456789" style="text-transform: uppercase;">
       </div>
-      <button onclick="handleLogout()" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg transition">
-        登出
+
+      <div style="text-align: left; margin-bottom: 24px;">
+        <label style="font-size: 13px; font-weight: bold; color: #444;">出生年月日 (西元)</label>
+        <input type="date" id="authBirthDate">
+        <small style="color: #888; font-size: 12px; margin-top: 4px; display: block;">請點選日曆選擇西元年月日</small>
+      </div>
+
+      <button id="btnLogin" class="btn-primary" style="width: 100%;" onclick="doLogin()">
+        🔐 驗證身分並登入專區
       </button>
-    </div>
-  </header>
 
-  <!-- ===============================
-       頁面 1：學員驗證登入頁面
-       =============================== -->
-  <section id="loginView" class="w-full max-w-md px-4 py-8 space-y-6 flex-1 flex flex-col justify-center">
-    <div class="bg-slate-800/90 border border-slate-700 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-sm">
-      <div class="text-center mb-6">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 text-3xl mb-3 border border-amber-500/20">
-          🪪
-        </div>
-        <h2 class="text-2xl font-black text-white">學員護照登入</h2>
-        <p class="text-xs text-slate-400 mt-1">請輸入身分證字號與出生年月日核對名冊</p>
+      <div class="sub-nav-links">
+        <a href="query.html">🔍 免登入查詢與列印時數證明</a> ｜ 
+        <a href="log.html">📝 自主登錄課程時數</a>
       </div>
-
-      <form id="loginForm" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">身分證字號 <span class="text-rose-400">*</span></label>
-          <input type="text" id="loginId" required placeholder="例如：A123456789" class="w-full px-4 py-3 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 uppercase tracking-wider focus:outline-none focus:border-amber-500 transition">
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">出生年月日 (西元8碼) <span class="text-rose-400">*</span></label>
-          <input type="text" id="loginBirth" required placeholder="例如：19980520" maxlength="10" class="w-full px-4 py-3 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 tracking-wider focus:outline-none focus:border-amber-500 transition">
-          <p class="text-[11px] text-slate-500 mt-1">輸入西元 8 碼數字（系統會自動格式化）</p>
-        </div>
-
-        <button type="submit" id="loginSubmitBtn" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 active:scale-[0.98] transition flex items-center justify-center gap-2">
-          <span>進入護照平臺</span>
-          <span id="loginSpinner" class="hidden w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
-        </button>
-      </form>
-
-      <div id="loginErrorBox" class="hidden mt-4 p-3 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 text-xs leading-relaxed"></div>
     </div>
 
-    <!-- 規章與說明 -->
-    <div class="text-center text-xs text-slate-500 space-y-2">
-      <p>初次申報或有任何問題，請洽輔仁大學原資中心專任助理。</p>
-      <a href="download/活動手冊範例.txt" download class="inline-flex items-center gap-1 text-amber-400/80 hover:text-amber-300 hover:underline">
-        <span>📄</span> 下載增能護照實施說明檔案
-      </a>
-    </div>
-  </section>
-
-  <!-- ===============================
-       頁面 2：學員專區儀表板 (Dashboard)
-       =============================== -->
-  <section id="dashboardView" class="hidden w-full max-w-4xl px-4 py-6 space-y-6 flex-1">
-    
-    <!-- 學員名片與累計時數大卡片 -->
-    <div class="bg-gradient-to-br from-slate-800 to-slate-800/60 border border-slate-700/80 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-      <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
-        <div>
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold mb-2">
-            <span>✨</span> 認證學員
+    <!-- 2. 學員個人專區 -->
+    <div id="dashboardCard" class="card" style="display: none;">
+      <div class="profile-bar">
+        <div class="profile-info">
+          <h3 id="dspStudentName">學員姓名</h3>
+          <p>身分證：<span id="dspMaskedId"></span> ｜ 單位：<span id="dspUnit"></span></p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="hours-pill">
+            總研習時數：<span id="dspTotalHours" style="font-size: 20px; color: #ffe082;">0</span> 小時
           </div>
-          <h2 class="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
-            <span id="dashUserName">學員姓名</span>
-            <span id="dashUserUnit" class="text-xs font-normal text-slate-400 bg-slate-700/60 px-2.5 py-1 rounded-lg border border-slate-600">服務單位</span>
-          </h2>
-          <p class="text-xs text-slate-400 mt-1" id="dashUserId">身分證字號：-</p>
-        </div>
-
-        <!-- 總時數圓角徽章 -->
-        <div class="bg-slate-900/90 border border-amber-500/40 rounded-2xl p-4 text-center min-w-[150px] shadow-lg">
-          <div class="text-xs text-amber-400/90 font-medium">累計研習總時數</div>
-          <div class="text-3xl sm:text-4xl font-black text-white mt-1">
-            <span id="dashTotalHours" class="text-amber-400">0.0</span>
-            <span class="text-sm font-normal text-slate-400 ml-1">小時</span>
-          </div>
+          <button class="action-btn-sm btn-secondary" onclick="doLogout()" style="background: rgba(255,255,255,0.9); color: #333;">登出</button>
         </div>
       </div>
 
-      <!-- 快捷操作列 -->
-      <div class="mt-6 pt-6 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-3 no-print">
-        <button onclick="openApplyModal()" class="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm rounded-xl shadow-md active:scale-95 transition flex items-center gap-2">
-          <span>➕</span> 自主申報新時數
-        </button>
-
-        <button onclick="window.print()" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold rounded-xl border border-slate-600 active:scale-95 transition flex items-center gap-2">
-          <span>🖨️</span> 列印時數清冊
-        </button>
-      </div>
-    </div>
-
-    <!-- 依「課程分類」歸納時數統計卡片 -->
-    <div class="bg-slate-800/70 border border-slate-700 rounded-3xl p-6 shadow-xl space-y-4">
-      <div class="flex items-center justify-between">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <span>📊</span> 各領域時數歸納統計
-        </h3>
-        <span class="text-xs text-slate-400">依分類標準自動彙整</span>
+      <div class="tabs-nav">
+        <button id="tabBtn1" class="tab-btn active" onclick="switchTab(1)">📋 我的時數清單</button>
+        <button id="tabBtn2" class="tab-btn" onclick="switchTab(2)">➕ 申報新時數</button>
+        <button id="tabBtn3" class="tab-btn" onclick="switchTab(3)">🖨️ 列印時數證明書</button>
       </div>
 
-      <div id="categoryCardsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <!-- 動態渲染各大類時數卡片 -->
-      </div>
-    </div>
-
-    <!-- 研習申報歷史明細總表 -->
-    <div class="bg-slate-800/70 border border-slate-700 rounded-3xl p-6 shadow-xl space-y-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="text-base font-bold text-white flex items-center gap-2">
-            <span>📜</span> 研習歷程申報清單
-          </h3>
-          <p class="text-xs text-slate-400 mt-0.5">最新紀錄排在最上方；「待審核」之紀錄可自行修改或撤銷</p>
+      <!-- TAB 1: 申報歷史紀錄清單 -->
+      <div id="tabContent1">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span style="font-size: 15px; font-weight: bold; color: #5f6368;">目前所有研習申報紀錄</span>
+          <button class="btn-primary" style="padding: 8px 14px; font-size: 13px;" onclick="refreshDashboard()">🔄 重新整理</button>
         </div>
-      </div>
-
-      <!-- 表格容器 -->
-      <div class="overflow-x-auto rounded-2xl border border-slate-700">
-        <table class="w-full text-left text-xs">
-          <thead class="bg-slate-900/90 text-slate-400 font-semibold border-b border-slate-700">
+        
+        <table class="records-table">
+          <thead>
             <tr>
-              <th class="py-3 px-4">課程名稱</th>
-              <th class="py-3 px-4">領域類別</th>
-              <th class="py-3 px-4">研習時間</th>
-              <th class="py-3 px-4 text-center">時數</th>
-              <th class="py-3 px-4 text-center">審核狀態</th>
-              <th class="py-3 px-4 text-center">佐證文件</th>
-              <th class="py-3 px-4 text-center no-print">操作</th>
+              <th style="width: 25%;">課程名稱</th>
+              <th style="width: 20%;">分類</th>
+              <th style="width: 15%;">活動時間</th>
+              <th style="width: 10%; text-align: right;">時數</th>
+              <th style="width: 12%; text-align: center;">審核狀態</th>
+              <th style="width: 18%; text-align: center;">操作</th>
             </tr>
           </thead>
-          <tbody id="recordsTableBody" class="divide-y divide-slate-700/60 text-slate-300">
-            <!-- 動態渲染紀錄列 -->
-          </tbody>
+          <tbody id="recordsTbody"></tbody>
         </table>
       </div>
 
-      <div id="noRecordsMsg" class="hidden text-center py-8 text-slate-500 text-xs">
-        尚未有申報紀錄，請點擊上方按鈕自主申報第一筆時數！
-      </div>
-    </div>
-
-  </section>
-
-  <!-- ===============================
-       彈跳視窗：自主申報 / 修改 Modal
-       =============================== -->
-  <div id="applyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm no-print">
-    <div class="bg-slate-800 border border-slate-700 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
-      
-      <div class="flex items-center justify-between border-b border-slate-700 pb-4">
-        <h3 id="modalTitle" class="text-lg font-bold text-white flex items-center gap-2">
-          <span>➕</span> 自主申報研習時數
-        </h3>
-        <button onclick="closeApplyModal()" class="text-slate-400 hover:text-white text-lg p-1">✕</button>
-      </div>
-
-      <form id="applyForm" class="space-y-4">
-        <input type="hidden" id="editRecordId" value="">
-
-        <!-- 課程大類連動選單 -->
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">課程領域類別 <span class="text-rose-400">*</span></label>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <select id="mainCatSelect" required class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
-              <option value="">請選擇大類...</option>
-            </select>
-            <select id="subCatSelect" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
-              <option value="">請選擇小類...</option>
-            </select>
-          </div>
+      <!-- TAB 2: 快速申報新時數 -->
+      <div id="tabContent2" style="display: none;">
+        <div style="background: #e8f0fe; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: #1967d2;">
+          💡 <strong>已自動綁定學員身分：</strong><span id="formAutoName"></span> (<span id="formAutoId"></span>)，您只需填寫研習明細！
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">研習課程名稱 <span class="text-rose-400">*</span></label>
-          <input type="text" id="applyCourseName" required placeholder="例如：原住民族文化敏感度與學生輔導工作坊" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">開始時間 <span class="text-rose-400">*</span></label>
-            <input type="datetime-local" id="applyStartTime" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="grid-column: span 2;">
+            <label style="font-weight: bold; font-size: 13px;">課程或會議完整名稱：</label>
+            <input type="text" id="newCourseName" placeholder="請輸入課程名稱">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">結束時間 <span class="text-rose-400">*</span></label>
-            <input type="datetime-local" id="applyEndTime" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
+            <label style="font-weight: bold; font-size: 13px;">課程分類 (一)：</label>
+            <select id="newCat1" onchange="onCategory1Change()"><option value="">載入中...</option></select>
+          </div>
+          <div>
+            <label style="font-weight: bold; font-size: 13px;">課程分類 (二)：</label>
+            <select id="newCat2"><option value="">請先選分類(一)</option></select>
+          </div>
+          <div>
+            <label style="font-weight: bold; font-size: 13px;">活動開始時間：</label>
+            <input type="datetime-local" id="newStartTime">
+          </div>
+          <div>
+            <label style="font-weight: bold; font-size: 13px;">活動結束時間：</label>
+            <input type="datetime-local" id="newEndTime">
+          </div>
+          <div style="grid-column: span 2;">
+            <label style="font-weight: bold; font-size: 13px;">申請研習時數：</label>
+            <input type="number" id="newHours" placeholder="例如：3" step="0.5" min="0">
+          </div>
+          <div style="grid-column: span 2;">
+            <label style="font-weight: bold; font-size: 13px;">上傳佐證圖片：</label>
+            <input type="file" id="newEvidenceFile" accept="image/*">
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">申請時數 (小時) <span class="text-rose-400">*</span></label>
-          <input type="number" id="applyHours" step="0.5" min="0.5" required placeholder="例如：3" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
+        <button id="btnSubmitNew" class="btn-primary btn-success" style="margin-top: 25px; width: 100%;" onclick="submitNewRecord()">
+          🚀 確認送出申請
+        </button>
+      </div>
+
+      <!-- TAB 3: 列印時數證明書 -->
+      <div id="tabContent3" style="display: none; text-align: center; padding: 25px 0;">
+        <h3 style="color: #1a73e8; margin-bottom: 10px;">輔仁大學原住民族學生資源中心研習時數證明書</h3>
+        <p style="color: #666; font-size: 14px; margin-bottom: 25px;">隨時產出並匯出標準 A4 格式時數證明書</p>
+        
+        <div style="max-width: 360px; margin: 0 auto 25px auto; text-align: left; background: #f8f9fa; padding: 15px 20px; border-radius: 10px; border: 1px solid #dadce0;">
+          <label style="font-size: 14px; font-weight: bold; color: #3c4043; display: block; margin-bottom: 6px;">📅 選擇列印研習年份：</label>
+          <select id="printYearSelect" style="padding: 10px 12px; font-size: 15px;">
+            <option value="">全部年份 (累計總時數)</option>
+            <option value="2024">2024 年</option>
+            <option value="2025">2025 年</option>
+            <option value="2026">2026 年</option>
+          </select>
         </div>
 
-        <!-- 佐證檔案上傳 -->
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">上傳佐證照片或檔案 (選填)</label>
-          <input type="file" id="applyFileInput" accept="image/*,application/pdf" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-400 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-400">
-          <p class="text-[11px] text-slate-500 mt-1">支援證書、簽到退照或公文照片，將自動上傳至雲端硬碟。</p>
-        </div>
-
-        <div class="pt-2 flex items-center justify-end gap-3">
-          <button type="button" onclick="closeApplyModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl text-xs font-semibold">取消</button>
-          <button type="submit" id="applySubmitBtn" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs shadow-md active:scale-95 flex items-center gap-1.5">
-            <span id="applyBtnText">確認送出申報</span>
-            <span id="applySpinner" class="hidden w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
-          </button>
-        </div>
-      </form>
-
+        <button class="btn-primary" style="padding: 14px 28px; font-size: 17px;" onclick="printCertificate()">
+          🖨️ 匯出 PDF / 列印時數證明
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="w-full py-6 text-center text-xs text-slate-600 no-print">
-    輔仁大學原住民族學生資源中心 • Faloco 增能護照平臺
-  </footer>
+  <!-- 修改資料彈窗 (Modal) -->
+  <div id="editModal" class="modal-overlay">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+        <h3 style="margin: 0; font-size: 18px; color: #1a73e8;">✏️ 修改申報紀錄</h3>
+        <button onclick="closeEditModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #888;">&times;</button>
+      </div>
+      
+      <input type="hidden" id="editRecordId">
+      <div style="margin-bottom: 14px;">
+        <label style="font-size: 13px; font-weight: bold;">課程名稱：</label>
+        <input type="text" id="editCourseName">
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 14px;">
+        <div>
+          <label style="font-size: 13px; font-weight: bold;">分類(一)：</label>
+          <select id="editCat1" onchange="onEditCategory1Change()"></select>
+        </div>
+        <div>
+          <label style="font-size: 13px; font-weight: bold;">分類(二)：</label>
+          <select id="editCat2"></select>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 14px;">
+        <div>
+          <label style="font-size: 13px; font-weight: bold;">開始時間：</label>
+          <input type="text" id="editStartTime" placeholder="yyyy-MM-dd HH:mm">
+        </div>
+        <div>
+          <label style="font-size: 13px; font-weight: bold;">結束時間：</label>
+          <input type="text" id="editEndTime" placeholder="yyyy-MM-dd HH:mm">
+        </div>
+      </div>
+      <div style="margin-bottom: 14px;">
+        <label style="font-size: 13px; font-weight: bold;">研習時數：</label>
+        <input type="number" id="editHours" step="0.5">
+      </div>
+      <div style="margin-bottom: 20px;">
+        <label style="font-size: 13px; font-weight: bold;">重傳佐證圖片 (非必填)：</label>
+        <input type="file" id="editEvidenceFile" accept="image/*">
+      </div>
 
-  <!-- ===============================
-       JavaScript 核心互動邏輯
-       =============================== -->
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn-secondary action-btn-sm" style="padding: 10px 18px;" onclick="closeEditModal()">取消</button>
+        <button class="btn-primary action-btn-sm" id="btnSaveEdit" style="padding: 10px 18px;" onclick="saveEditedRecord()">儲存修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 客製化確認彈窗 -->
+  <div id="confirmModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 420px; text-align: center;">
+      <h3 style="margin: 0 0 10px 0; font-size: 20px; color: #d93025;">⚠️ 確認刪除</h3>
+      <p id="confirmModalText" style="color: #5f6368; font-size: 15px; line-height: 1.5; margin-bottom: 25px;"></p>
+      <div style="display: flex; justify-content: center; gap: 12px;">
+        <button class="btn-secondary action-btn-sm" style="padding: 10px 22px; font-size: 15px;" onclick="closeConfirmModal()">取消</button>
+        <button class="btn-danger action-btn-sm" style="padding: 10px 22px; font-size: 15px;" id="btnConfirmAction">確認刪除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript 核心邏輯 (支援 GitHub Pages API 連線) -->
   <script>
-    // ⚙️ GAS Webhook API 網址 (儲存在 localStorage，可隨時自訂)
+    let globalUser = null;
+    let globalDashboardData = null;
+    let categoryList = [];
+
+    // GAS API 網址設定
     let API_URL = localStorage.getItem("FALOCO_GAS_URL") || "";
 
-    // 狀態記憶
-    let currentUser = null;
-    let currentRecords = [];
-    let courseCategories = [];
-
-    // 預設分類字典備用 (若 API 尚未設定)
-    const DEFAULT_COURSE_CATEGORIES = [
-      { mainCategory: "文化與族群知能", subCategories: ["原住民族傳統文化", "當代族群議題", "語言與文化振興"] },
-      { mainCategory: "學生輔導與陪伴", subCategories: ["學習與職涯支持", "心理與生活適應", "家庭與社區連結"] },
-      { mainCategory: "行政與法規知能", subCategories: ["專案執行與核銷", "原民政策與法規", "資訊與平臺應用"] }
-    ];
-
-    function promptForGasUrl() {
-      const input = prompt("請輸入您的 Google Apps Script 網頁應用程式網址 (Web App URL)：", API_URL);
+    function promptApiUrl() {
+      const input = prompt("請貼上您的 Google Apps Script 網頁應用程式網址 (Web App URL)：", API_URL);
       if (input !== null) {
         API_URL = input.trim();
         localStorage.setItem("FALOCO_GAS_URL", API_URL);
-        checkGasBanner();
-        if (API_URL) fetchCourseCategories();
+        updateApiStatus();
+        loadCategories();
       }
     }
 
-    function checkGasBanner() {
-      const banner = document.getElementById("gasWarningBanner");
-      if (API_URL && API_URL.trim() !== "") {
-        banner.classList.add("hidden");
+    function updateApiStatus() {
+      const statusText = document.getElementById("apiStatusText");
+      if (API_URL && API_URL.startsWith("http")) {
+        statusText.textContent = "已連線正式 API (" + API_URL.substring(0, 35) + "...)";
+        statusText.style.color = "#a7f3d0";
       } else {
-        banner.classList.remove("hidden");
+        statusText.textContent = "尚未設定 GAS API 網址（目前為展示模擬模式）";
+        statusText.style.color = "#fef08a";
       }
     }
-    checkGasBanner();
+    updateApiStatus();
 
-    // 格式化日期輸入 (將任何格式整理為 YYYYMMDD)
-    function normalizeDateInput(val) {
-      return (val || "").toString().replace(/\D/g, "");
-    }
-
-    // -----------------------------------------------------------------
-    // 1. 讀取課程分類選單 (動態填入下拉選單)
-    // -----------------------------------------------------------------
-    async function fetchCourseCategories() {
-      if (API_URL) {
-        try {
-          const res = await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "getCourses" })
-          });
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            courseCategories = data;
-            populateCategoryDropdowns();
-            return;
-          }
-        } catch (e) {
-          console.warn("讀取課程分類失敗，改用預設分類：", e);
-        }
+    // 核心 API 請求函數
+    async function callGasApi(action, payload = {}) {
+      if (!API_URL) {
+        // 模擬模式
+        return mockApiResponse(action, payload);
       }
-      courseCategories = DEFAULT_COURSE_CATEGORIES;
-      populateCategoryDropdowns();
-    }
-
-    function populateCategoryDropdowns() {
-      const mainSelect = document.getElementById("mainCatSelect");
-      const subSelect = document.getElementById("subCatSelect");
-      mainSelect.innerHTML = '<option value="">請選擇大類...</option>';
-
-      courseCategories.forEach(cat => {
-        const opt = document.createElement("option");
-        opt.value = cat.mainCategory;
-        opt.textContent = cat.mainCategory;
-        mainSelect.appendChild(opt);
-      });
-
-      mainSelect.onchange = () => {
-        const selected = mainSelect.value;
-        subSelect.innerHTML = '<option value="">請選擇小類...</option>';
-        const found = courseCategories.find(c => c.mainCategory === selected);
-        if (found && found.subCategories) {
-          found.subCategories.forEach(sub => {
-            const opt = document.createElement("option");
-            opt.value = sub;
-            opt.textContent = sub;
-            subSelect.appendChild(opt);
-          });
-        }
-      };
-    }
-    fetchCourseCategories();
-
-    // -----------------------------------------------------------------
-    // 2. 登入邏輯
-    // -----------------------------------------------------------------
-    const loginForm = document.getElementById("loginForm");
-    const loginSubmitBtn = document.getElementById("loginSubmitBtn");
-    const loginSpinner = document.getElementById("loginSpinner");
-    const loginErrorBox = document.getElementById("loginErrorBox");
-
-    loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      loginErrorBox.classList.add("hidden");
-      const idNumber = document.getElementById("loginId").value.trim().toUpperCase();
-      const birthDate = normalizeDateInput(document.getElementById("loginBirth").value);
-
-      if (!idNumber || !birthDate) {
-        showLoginError("身分證字號與出生年月日皆為必填！");
-        return;
-      }
-
-      loginSubmitBtn.disabled = true;
-      loginSpinner.classList.remove("hidden");
-
       try {
-        if (API_URL) {
-          // 真實連線 GAS
-          const res = await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify({
-              action: "getDashboard",
-              idNumber: idNumber,
-              birthDate: birthDate
-            })
-          });
-          const data = await res.json();
-          if (data.status === "success") {
-            currentUser = { ...data.user, birthDate: birthDate };
-            renderDashboard(data);
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: action, ...payload })
+        });
+        return await res.json();
+      } catch (err) {
+        throw new Error("網路連線失敗：" + err.toString());
+      }
+    }
+
+    // 離線模擬資料
+    function mockApiResponse(action, payload) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          if (action === "getCourses") {
+            resolve([
+              { mainCategory: "文化與族群知能", subCategories: ["原住民族傳統文化", "當代族群議題"] },
+              { mainCategory: "學生輔導與陪伴", subCategories: ["學習與職涯支持", "心理與生活適應"] },
+              { mainCategory: "行政與法規知能", subCategories: ["專案執行與管考", "原民政策法規"] }
+            ]);
+          } else if (action === "verifyUser" || action === "getDashboard") {
+            resolve({
+              status: "success",
+              user: { name: "測試學員", idNumber: payload.idNumber || "A123456789", unit: "輔仁大學原資中心", birthDate: payload.birthDate || "19980520" },
+              totalHours: 10.5,
+              records: [
+                { recordId: "MOCK_1", courseName: "原住民族傳統編織與文化工作坊", mainCategory: "文化與族群知能", subCategory: "原住民族傳統文化", startTime: "2026-04-15 09:00", endTime: "2026-04-15 16:30", hours: 6.5, status: "通過", canEditOrDelete: false, fileUrl: "" },
+                { recordId: "MOCK_2", courseName: "大專校院原民學生生涯輔導增能會議", mainCategory: "學生輔導與陪伴", subCategory: "學習與職涯支持", startTime: "2026-05-10 13:30", endTime: "2026-05-10 17:30", hours: 4.0, status: "待審核", canEditOrDelete: true, fileUrl: "" }
+              ],
+              categoryOrder: { "文化與族群知能": 1, "學生輔導與陪伴": 2, "行政與法規知能": 3 }
+            });
+          } else if (action === "apply") {
+            resolve({ status: "success", message: "【展示模式】研習時數已成功申報！" });
+          } else if (action === "update") {
+            resolve({ status: "success", message: "【展示模式】紀錄已成功修改！" });
+          } else if (action === "delete") {
+            resolve({ status: "success", message: "【展示模式】紀錄已成功撤銷！" });
           } else {
-            showLoginError(data.message || "身分驗證失敗，請核對身分證或生日！");
+            resolve({ status: "success" });
           }
-        } else {
-          // 模擬模式
-          await new Promise(r => setTimeout(r, 600));
-          currentUser = {
-            name: "測試學員",
-            idNumber: idNumber,
-            unit: "輔仁大學原資中心",
-            birthDate: birthDate
-          };
-          renderMockDashboard();
+        }, 500);
+      });
+    }
+
+    // === 質感 UI 提示小工具 ===
+    function showToast(text, type = "info") {
+      const box = document.getElementById('toastBox');
+      const toast = document.createElement('div');
+      toast.className = `toast-item toast-${type}`;
+      let icon = "💡";
+      if (type === "success") icon = "🎉";
+      if (type === "error") icon = "❌";
+      toast.innerHTML = `<span>${icon}</span> <span>${text}</span>`;
+      box.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.transition = "opacity 0.3s, transform 0.3s";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(-15px)";
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    function showConfirm(text, onConfirm) {
+      document.getElementById('confirmModalText').innerText = text;
+      const btn = document.getElementById('btnConfirmAction');
+      btn.onclick = function() {
+        closeConfirmModal();
+        onConfirm();
+      };
+      document.getElementById('confirmModal').style.display = "flex";
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').style.display = "none";
+    }
+
+    window.onload = function() {
+      const now = new Date();
+      const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      if (document.getElementById('newStartTime')) document.getElementById('newStartTime').value = localIso;
+      if (document.getElementById('newEndTime')) document.getElementById('newEndTime').value = localIso;
+
+      loadCategories();
+    };
+
+    async function loadCategories() {
+      try {
+        const data = await callGasApi("getCourses");
+        if (Array.isArray(data) && data.length > 0) {
+          categoryList = data;
+          initCategorySelects();
         }
       } catch (err) {
-        showLoginError("連線伺服器失敗：" + err.toString());
-      } finally {
-        loginSubmitBtn.disabled = false;
-        loginSpinner.classList.add("hidden");
+        console.warn("載入分類失敗：", err);
       }
-    });
-
-    function showLoginError(msg) {
-      loginErrorBox.textContent = msg;
-      loginErrorBox.classList.remove("hidden");
     }
 
-    // -----------------------------------------------------------------
-    // 3. 渲染儀表板
-    // -----------------------------------------------------------------
-    function renderDashboard(data) {
-      document.getElementById("loginView").classList.add("hidden");
-      document.getElementById("dashboardView").classList.remove("hidden");
-      document.getElementById("userHeaderBar").classList.remove("hidden");
-
-      // 基本資訊
-      document.getElementById("headerUserName").textContent = data.user.name;
-      document.getElementById("headerUserUnit").textContent = data.user.unit;
-      document.getElementById("dashUserName").textContent = data.user.name;
-      document.getElementById("dashUserUnit").textContent = data.user.unit;
-      document.getElementById("dashUserId").textContent = "身分證字號：" + data.user.idNumber;
-      document.getElementById("dashTotalHours").textContent = data.totalHours || 0.0;
-
-      // 渲染分類卡片
-      renderCategoryCards(data.groupedCourses);
-
-      // 渲染明細清單
-      currentRecords = data.records || [];
-      renderRecordsTable(currentRecords);
+    function initCategorySelects() {
+      const cat1 = document.getElementById('newCat1');
+      if (!cat1) return;
+      cat1.innerHTML = '<option value="">-- 請選擇分類 --</option>';
+      categoryList.forEach(function(item) {
+        let opt = document.createElement('option');
+        opt.value = item.mainCategory;
+        opt.innerText = item.mainCategory;
+        cat1.appendChild(opt);
+      });
     }
 
-    function renderCategoryCards(groupedCourses) {
-      const container = document.getElementById("categoryCardsContainer");
-      container.innerHTML = "";
+    function onCategory1Change() {
+      const cat1Val = document.getElementById('newCat1').value;
+      const cat2 = document.getElementById('newCat2');
+      cat2.innerHTML = "";
+      if (cat1Val) {
+        let matched = categoryList.find(i => i.mainCategory === cat1Val);
+        if (matched && matched.subCategories.length > 0) {
+          matched.subCategories.forEach(function(sub) {
+            let opt = document.createElement('option');
+            opt.value = sub; opt.innerText = sub;
+            cat2.appendChild(opt);
+          });
+          return;
+        }
+      }
+      cat2.innerHTML = '<option value="">請先選分類(一)</option>';
+    }
 
-      if (!groupedCourses || Object.keys(groupedCourses).length === 0) {
-        container.innerHTML = '<div class="text-xs text-slate-500 col-span-full">尚未有已分類之修課紀錄</div>';
+    // 1. 執行登入核對
+    async function doLogin() {
+      const idNo = document.getElementById('authIdNumber').value.trim().toUpperCase();
+      const bDate = document.getElementById('authBirthDate').value;
+      const btn = document.getElementById('btnLogin');
+
+      if (!idNo || !bDate) {
+        showToast("請完整輸入身分證字號與出生日期！", "error");
         return;
       }
 
-      for (let cat in groupedCourses) {
-        const item = groupedCourses[cat];
-        const card = document.createElement("div");
-        card.className = "bg-slate-900/80 border border-slate-700/80 rounded-2xl p-4 flex flex-col justify-between";
-        card.innerHTML = `
-          <div>
-            <div class="text-xs font-semibold text-slate-300 mb-1">${cat}</div>
-            <div class="text-[11px] text-slate-500">修習 ${item.courses ? item.courses.length : 0} 門課程</div>
-          </div>
-          <div class="mt-3 text-right">
-            <span class="text-xl font-bold text-amber-400">${item.subTotal}</span>
-            <span class="text-xs text-slate-400">小時</span>
-          </div>
-        `;
-        container.appendChild(card);
+      btn.disabled = true;
+      btn.innerText = "驗證中，請稍候...";
+
+      try {
+        const res = await callGasApi("getDashboard", { idNumber: idNo, birthDate: bDate });
+        btn.disabled = false;
+        btn.innerText = "🔐 驗證身分並登入專區";
+
+        if (res.status !== "success") {
+          showToast(res.message || "身分核對失敗！", "error");
+          return;
+        }
+
+        showToast("登入成功！正在載入您的專區...", "success");
+        globalUser = { ...res.user, birthDate: bDate };
+        globalDashboardData = res;
+
+        document.getElementById('loginCard').style.display = "none";
+        document.getElementById('dashboardCard').style.display = "block";
+
+        document.getElementById('dspStudentName').innerText = res.user.name + " 的時數專區";
+        document.getElementById('dspMaskedId').innerText = res.user.idNumber.substring(0, 5) + "*****";
+        document.getElementById('dspUnit').innerText = res.user.unit;
+        document.getElementById('dspTotalHours').innerText = res.totalHours;
+
+        document.getElementById('formAutoName').innerText = res.user.name;
+        document.getElementById('formAutoId').innerText = res.user.idNumber;
+
+        renderRecordsTable(res.records);
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerText = "🔐 驗證身分並登入專區";
+        showToast("系統連線異常：" + err.toString(), "error");
       }
     }
 
+    async function refreshDashboard() {
+      if (!globalUser) return;
+      try {
+        const res = await callGasApi("getDashboard", { idNumber: globalUser.idNumber, birthDate: globalUser.birthDate });
+        if (res.status === "success") {
+          globalDashboardData = res;
+          document.getElementById('dspTotalHours').innerText = res.totalHours;
+          renderRecordsTable(res.records);
+          showToast("資料已更新！", "success");
+        }
+      } catch (e) {
+        showToast("更新失敗：" + e.toString(), "error");
+      }
+    }
+
+    function doLogout() {
+      globalUser = null;
+      globalDashboardData = null;
+      document.getElementById('dashboardCard').style.display = "none";
+      document.getElementById('loginCard').style.display = "block";
+      document.getElementById('authIdNumber').value = "";
+      document.getElementById('authBirthDate').value = "";
+      showToast("已安全登出！", "info");
+    }
+
+    // 3. 渲染所有歷史紀錄
     function renderRecordsTable(records) {
-      const tbody = document.getElementById("recordsTableBody");
-      const noRecords = document.getElementById("noRecordsMsg");
+      const tbody = document.getElementById('recordsTbody');
       tbody.innerHTML = "";
 
       if (!records || records.length === 0) {
-        noRecords.classList.remove("hidden");
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #888; padding: 25px;">目前尚無研習時數申報紀錄</td></tr>`;
         return;
       }
-      noRecords.classList.add("hidden");
 
-      records.forEach(rec => {
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-800/40 transition";
+      records.forEach(function(rec) {
+        let tr = document.createElement('tr');
+        
+        let badgeClass = "badge-pending";
+        if (rec.status === "通過" || rec.status === "已審核") badgeClass = "badge-approved";
+        if (rec.status === "不通過") badgeClass = "badge-rejected";
 
-        // 審核狀態徽章顏色
-        let statusBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/30">待審核</span>`;
-        if (rec.status === "已通過" || rec.status === "通過") {
-          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">已通過</span>`;
-        } else if (rec.status === "不通過" || rec.status === "退回") {
-          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] bg-rose-500/20 text-rose-300 border border-rose-500/30">不通過</span>`;
-        }
-
-        // 佐證連結
-        let fileLink = `<span class="text-slate-500">-</span>`;
-        if (rec.fileUrl && rec.fileUrl.startsWith("http")) {
-          fileLink = `<a href="${rec.fileUrl}" target="_blank" class="text-amber-400 hover:underline">📷 檢視</a>`;
-        }
-
-        // 動作按鈕 (僅待審核可修改/刪除)
-        let actionButtons = `<span class="text-slate-600 text-[11px]">鎖定</span>`;
+        let actionHtml = "";
         if (rec.canEditOrDelete) {
-          actionButtons = `
-            <div class="flex items-center justify-center gap-2">
-              <button onclick="editRecord('${rec.recordId}')" class="text-amber-400 hover:text-amber-300 font-semibold">修改</button>
-              <button onclick="deleteRecord('${rec.recordId}')" class="text-rose-400 hover:text-rose-300 font-semibold">撤銷</button>
-            </div>
+          actionHtml = `
+            <button class="action-btn-sm btn-primary" onclick="openEditModal('${rec.recordId}')">✏️ 修改</button>
+            <button class="action-btn-sm btn-danger" onclick="deleteRecord('${rec.recordId}', '${rec.courseName}')">🗑️ 刪除</button>
           `;
+        } else {
+          actionHtml = `<span style="color: #999; font-size: 12px;">🔒 已審核鎖定</span>`;
         }
+
+        let linkHtml = (rec.fileUrl && rec.fileUrl.indexOf("http") !== -1) 
+          ? `<br><a href="${rec.fileUrl}" target="_blank" style="font-size: 12px; color: #1a73e8; font-weight: bold;">📷 檢視佐證</a>` 
+          : "";
 
         tr.innerHTML = `
-          <td class="py-3 px-4 font-medium text-white">${rec.courseName}</td>
-          <td class="py-3 px-4 text-slate-400">${rec.mainCategory} > ${rec.subCategory}</td>
-          <td class="py-3 px-4 text-slate-400 whitespace-nowrap">${rec.startTime} ~ ${rec.endTime}</td>
-          <td class="py-3 px-4 text-center font-bold text-amber-400">${rec.hours}</td>
-          <td class="py-3 px-4 text-center">${statusBadge}</td>
-          <td class="py-3 px-4 text-center">${fileLink}</td>
-          <td class="py-3 px-4 text-center no-print">${actionButtons}</td>
+          <td><strong>${rec.courseName}</strong>${linkHtml}</td>
+          <td>${rec.mainCategory} > ${rec.subCategory}</td>
+          <td style="font-size: 13px;">${rec.startTime ? rec.startTime.split(' ')[0] : '-'}</td>
+          <td style="text-align: right; font-weight: bold; color: #1a73e8;">${rec.hours}</td>
+          <td style="text-align: center;"><span class="badge ${badgeClass}">${rec.status}</span></td>
+          <td style="text-align: center;">${actionHtml}</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    function renderMockDashboard() {
-      renderDashboard({
-        user: currentUser,
-        totalHours: 12.5,
-        groupedCourses: {
-          "文化與族群知能": { subTotal: 6.5, courses: [{ name: "原民傳統織布技術研習", hours: 6.5 }] },
-          "學生輔導與陪伴": { subTotal: 4.0, courses: [{ name: "原民學生職涯定向研討", hours: 4.0 }] },
-          "行政與法規知能": { subTotal: 2.0, courses: [{ name: "高教深耕計畫管考說明會", hours: 2.0 }] }
-        },
-        records: [
-          {
-            recordId: "MOCK_1",
-            courseName: "原民傳統織布技術研習",
-            mainCategory: "文化與族群知能",
-            subCategory: "原住民族傳統文化",
-            startTime: "2026-04-10 09:00",
-            endTime: "2026-04-10 16:30",
-            hours: 6.5,
-            status: "已通過",
-            fileUrl: "",
-            canEditOrDelete: false
-          },
-          {
-            recordId: "MOCK_2",
-            courseName: "原民學生職涯定向研討",
-            mainCategory: "學生輔導與陪伴",
-            subCategory: "學習與職涯支持",
-            startTime: "2026-05-12 13:30",
-            endTime: "2026-05-12 17:30",
-            hours: 4.0,
-            status: "待審核",
-            fileUrl: "",
-            canEditOrDelete: true
-          }
-        ]
-      });
-    }
-
-    function handleLogout() {
-      currentUser = null;
-      document.getElementById("dashboardView").classList.add("hidden");
-      document.getElementById("userHeaderBar").classList.add("hidden");
-      document.getElementById("loginView").classList.remove("hidden");
-      document.getElementById("loginForm").reset();
-    }
-
-    // -----------------------------------------------------------------
-    // 4. 自主申報與修改紀錄 Modal
-    // -----------------------------------------------------------------
-    const applyModal = document.getElementById("applyModal");
-    const applyForm = document.getElementById("applyForm");
-    const modalTitle = document.getElementById("modalTitle");
-    const applyBtnText = document.getElementById("applyBtnText");
-    const applySubmitBtn = document.getElementById("applySubmitBtn");
-    const applySpinner = document.getElementById("applySpinner");
-
-    function openApplyModal() {
-      document.getElementById("editRecordId").value = "";
-      applyForm.reset();
-      modalTitle.innerHTML = "<span>➕</span> 自主申報研習時數";
-      applyBtnText.textContent = "確認送出申報";
-      applyModal.classList.remove("hidden");
-    }
-
-    function closeApplyModal() {
-      applyModal.classList.add("hidden");
-    }
-
-    function editRecord(recordId) {
-      const rec = currentRecords.find(r => r.recordId === recordId);
-      if (!rec) return;
-
-      document.getElementById("editRecordId").value = recordId;
-      document.getElementById("applyCourseName").value = rec.courseName;
-      document.getElementById("applyHours").value = rec.hours;
-
-      // 填入時間
-      if (rec.startTime && rec.startTime.length >= 16) {
-        document.getElementById("applyStartTime").value = rec.startTime.replace(" ", "T");
+    // 4. 頁籤切換
+    function switchTab(tabIdx) {
+      for (let i = 1; i <= 3; i++) {
+        document.getElementById('tabBtn' + i).className = (i === tabIdx) ? 'tab-btn active' : 'tab-btn';
+        document.getElementById('tabContent' + i).style.display = (i === tabIdx) ? 'block' : 'none';
       }
-      if (rec.endTime && rec.endTime.length >= 16) {
-        document.getElementById("applyEndTime").value = rec.endTime.replace(" ", "T");
+    }
+
+    // 5. 送出新申請
+    async function submitNewRecord() {
+      const cName = document.getElementById('newCourseName').value.trim();
+      const c1 = document.getElementById('newCat1').value;
+      const c2 = document.getElementById('newCat2').value;
+      const sTime = document.getElementById('newStartTime').value;
+      const eTime = document.getElementById('newEndTime').value;
+      const hours = document.getElementById('newHours').value.trim();
+      const fileInput = document.getElementById('newEvidenceFile');
+      const btn = document.getElementById('btnSubmitNew');
+
+      if (!cName || !c1 || !hours) {
+        showToast("請完整填寫課程名稱、分類與申請時數！", "error");
+        return;
       }
 
-      // 填入選單
-      const mainSelect = document.getElementById("mainCatSelect");
-      mainSelect.value = rec.mainCategory;
-      mainSelect.onchange();
-      document.getElementById("subCatSelect").value = rec.subCategory;
+      btn.disabled = true;
+      btn.innerText = "資料送出中，請稍候...";
 
-      modalTitle.innerHTML = "<span>✏️</span> 修改研習紀錄";
-      applyBtnText.textContent = "儲存修改";
-      applyModal.classList.remove("hidden");
-    }
+      const combinedCat = c1 + " > " + c2;
+      const formattedStart = sTime ? sTime.replace('T', ' ') : '-';
+      const formattedEnd = eTime ? eTime.replace('T', ' ') : '-';
 
-    // 檔案轉 Base64
-    function fileToBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => {
-          const res = reader.result;
-          const base64 = res.split(",")[1];
-          resolve({
-            base64: base64,
-            mimeType: file.type,
-            fileName: file.name
-          });
-        };
-        reader.onerror = error => reject(error);
-      });
-    }
-
-    applyForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!currentUser) return;
-
-      const editRecordId = document.getElementById("editRecordId").value;
-      const isEdit = (editRecordId && editRecordId !== "");
-
-      const mainCat = document.getElementById("mainCatSelect").value;
-      const subCat = document.getElementById("subCatSelect").value || "-";
-      const courseClass = mainCat + " > " + subCat;
-      const courseName = document.getElementById("applyCourseName").value.trim();
-      const startTime = document.getElementById("applyStartTime").value.replace("T", " ");
-      const endTime = document.getElementById("applyEndTime").value.replace("T", " ");
-      const hours = document.getElementById("applyHours").value;
-
-      const fileInput = document.getElementById("applyFileInput");
       let fileData = null;
-      if (fileInput.files && fileInput.files[0]) {
-        fileData = await fileToBase64(fileInput.files[0]);
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        fileData = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve({
+            base64: e.target.result.split(',')[1],
+            fileName: file.name,
+            mimeType: file.type
+          });
+          reader.readAsDataURL(file);
+        });
       }
-
-      applySubmitBtn.disabled = true;
-      applySpinner.classList.remove("hidden");
 
       try {
-        if (API_URL) {
-          const actionType = isEdit ? "update" : "apply";
-          const payload = {
-            action: actionType,
-            idNumber: currentUser.idNumber,
-            birthDate: currentUser.birthDate,
-            recordId: editRecordId,
-            courseClass: courseClass,
-            courseName: courseName,
-            startTime: startTime,
-            endTime: endTime,
-            hours: hours,
-            fileData: fileData
-          };
+        const res = await callGasApi("apply", {
+          idNumber: globalUser.idNumber,
+          birthDate: globalUser.birthDate,
+          courseClass: combinedCat,
+          courseName: cName,
+          startTime: formattedStart,
+          endTime: formattedEnd,
+          hours: hours,
+          fileData: fileData
+        });
 
-          const res = await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify(payload)
-          });
-          const result = await res.json();
-          if (result.status === "success") {
-            alert(result.message || "操作成功！");
-            closeApplyModal();
-            // 重新刷新儀表板
-            refreshDashboardData();
-          } else {
-            alert("操作失敗：" + (result.message || "未知錯誤"));
-          }
+        btn.disabled = false;
+        btn.innerText = "🚀 確認送出申請";
+
+        if (res.status === "success") {
+          showToast(res.message || "研習時數已成功申報！", "success");
+          document.getElementById('newCourseName').value = "";
+          document.getElementById('newHours').value = "";
+          document.getElementById('newEvidenceFile').value = "";
+          switchTab(1);
+          refreshDashboard();
         } else {
-          // 模擬模式
-          await new Promise(r => setTimeout(r, 600));
-          alert("【模擬模式】" + (isEdit ? "修改成功！" : "申報成功！"));
-          closeApplyModal();
+          showToast(res.message, "error");
         }
       } catch (err) {
-        alert("傳送時發生錯誤：" + err);
-      } finally {
-        applySubmitBtn.disabled = false;
-        applySpinner.classList.add("hidden");
-      }
-    });
-
-    async function deleteRecord(recordId) {
-      if (!confirm("確定要撤銷此筆申報紀錄嗎？")) return;
-      if (API_URL) {
-        try {
-          const res = await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify({
-              action: "delete",
-              idNumber: currentUser.idNumber,
-              birthDate: currentUser.birthDate,
-              recordId: recordId
-            })
-          });
-          const result = await res.json();
-          if (result.status === "success") {
-            alert(result.message || "已成功刪除！");
-            refreshDashboardData();
-          } else {
-            alert("刪除失敗：" + result.message);
-          }
-        } catch (err) {
-          alert("刪除失敗：" + err);
-        }
-      } else {
-        alert("【模擬模式】已撤銷此筆紀錄。");
+        btn.disabled = false;
+        btn.innerText = "🚀 確認送出申請";
+        showToast("送出失敗：" + err.toString(), "error");
       }
     }
 
-    async function refreshDashboardData() {
-      if (!API_URL || !currentUser) return;
-      const res = await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "getDashboard",
-          idNumber: currentUser.idNumber,
-          birthDate: currentUser.birthDate
-        })
+    // 6. 刪除紀錄
+    function deleteRecord(recId, courseName) {
+      showConfirm(`確定要刪除「${courseName}」這筆申報紀錄嗎？此動作無法復原。`, async function() {
+        try {
+          const res = await callGasApi("delete", {
+            idNumber: globalUser.idNumber,
+            birthDate: globalUser.birthDate,
+            recordId: recId
+          });
+          if (res.status === "success") {
+            showToast("已成功刪除該筆紀錄！", "success");
+            refreshDashboard();
+          } else {
+            showToast(res.message, "error");
+          }
+        } catch (err) {
+          showToast("刪除失敗：" + err.toString(), "error");
+        }
       });
-      const data = await res.json();
-      if (data.status === "success") {
-        renderDashboard(data);
+    }
+
+    // 7. 開啟編輯彈窗
+    function openEditModal(recId) {
+      const rec = globalDashboardData.records.find(r => r.recordId === recId);
+      if (!rec) return;
+
+      document.getElementById('editRecordId').value = recId;
+      document.getElementById('editCourseName').value = rec.courseName;
+      document.getElementById('editStartTime').value = rec.startTime;
+      document.getElementById('editEndTime').value = rec.endTime;
+      document.getElementById('editHours').value = rec.hours;
+
+      const editCat1 = document.getElementById('editCat1');
+      editCat1.innerHTML = '<option value="">-- 請選擇 --</option>';
+      categoryList.forEach(function(item) {
+        let opt = document.createElement('option');
+        opt.value = item.mainCategory; opt.innerText = item.mainCategory;
+        if (item.mainCategory === rec.mainCategory) opt.selected = true;
+        editCat1.appendChild(opt);
+      });
+      onEditCategory1Change(rec.subCategory);
+
+      document.getElementById('editModal').style.display = "flex";
+    }
+
+    function onEditCategory1Change(defaultSub) {
+      const cat1Val = document.getElementById('editCat1').value;
+      const cat2 = document.getElementById('editCat2');
+      cat2.innerHTML = "";
+      if (cat1Val) {
+        let matched = categoryList.find(i => i.mainCategory === cat1Val);
+        if (matched && matched.subCategories.length > 0) {
+          matched.subCategories.forEach(function(sub) {
+            let opt = document.createElement('option');
+            opt.value = sub; opt.innerText = sub;
+            if (defaultSub && sub === defaultSub) opt.selected = true;
+            cat2.appendChild(opt);
+          });
+          return;
+        }
       }
+      cat2.innerHTML = '<option value="">無子分類</option>';
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').style.display = "none";
+    }
+
+    // 8. 儲存修改
+    async function saveEditedRecord() {
+      const recId = document.getElementById('editRecordId').value;
+      const cName = document.getElementById('editCourseName').value.trim();
+      const c1 = document.getElementById('editCat1').value;
+      const c2 = document.getElementById('editCat2').value;
+      const sTime = document.getElementById('editStartTime').value.trim();
+      const eTime = document.getElementById('editEndTime').value.trim();
+      const hours = document.getElementById('editHours').value.trim();
+      const fileInput = document.getElementById('editEvidenceFile');
+      const btn = document.getElementById('btnSaveEdit');
+
+      if (!cName || !c1 || !hours) {
+        showToast("請完整填寫課程名稱、分類與時數！", "error");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "儲存中...";
+      const combinedCat = c1 + " > " + c2;
+
+      let fileData = null;
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        fileData = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve({
+            base64: e.target.result.split(',')[1],
+            fileName: file.name,
+            mimeType: file.type
+          });
+          reader.readAsDataURL(file);
+        });
+      }
+
+      try {
+        const res = await callGasApi("update", {
+          idNumber: globalUser.idNumber,
+          birthDate: globalUser.birthDate,
+          recordId: recId,
+          courseClass: combinedCat,
+          courseName: cName,
+          startTime: sTime,
+          endTime: eTime,
+          hours: hours,
+          fileData: fileData
+        });
+
+        btn.disabled = false;
+        btn.innerText = "儲存修改";
+
+        if (res.status === "success") {
+          showToast("紀錄修改成功！", "success");
+          closeEditModal();
+          refreshDashboard();
+        } else {
+          showToast(res.message, "error");
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerText = "儲存修改";
+        showToast("修改失敗：" + err.toString(), "error");
+      }
+    }
+
+    // 9. 列印時數證明書
+    function printCertificate() {
+      if (!globalDashboardData) return;
+      const d = globalDashboardData;
+      const selectedYear = document.getElementById('printYearSelect').value;
+      const maskedId = d.user.idNumber.substring(0, 5) + "*****";
+      const today = new Date();
+      const dateStr = today.getFullYear() + '/' + (today.getMonth()+1) + '/' + today.getDate();
+
+      const displayTitle = selectedYear 
+        ? (selectedYear + " 年度輔仁大學原住民族學生資源中心研習時數證明書") 
+        : "輔仁大學原住民族學生資源中心研習時數證明書";
+
+      let filteredGrouped = {};
+      let filteredTotalHours = 0;
+      let orderMap = d.categoryOrder || {};
+
+      d.records.forEach(function(rec) {
+        let recYear = "";
+        if (rec.startTime) {
+          let match = rec.startTime.match(/^(\d{4})/);
+          if (match) recYear = match[1];
+        }
+
+        if (selectedYear !== "" && recYear !== selectedYear) return;
+
+        let mainCat = rec.mainCategory || "未分類";
+        let subCat = (rec.subCategory === "-" || !rec.subCategory) ? mainCat : rec.subCategory;
+        let h = parseFloat(rec.hours) || 0;
+
+        if (!filteredGrouped[mainCat]) {
+          filteredGrouped[mainCat] = { courses: [], subTotal: 0 };
+        }
+        filteredGrouped[mainCat].courses.push({
+          name: rec.courseName,
+          cat2Name: subCat,
+          hours: h
+        });
+        filteredGrouped[mainCat].subTotal += h;
+        filteredTotalHours += h;
+      });
+
+      filteredTotalHours = Math.round(filteredTotalHours * 10) / 10;
+      for (let c in filteredGrouped) {
+        filteredGrouped[c].subTotal = Math.round(filteredGrouped[c].subTotal * 10) / 10;
+      }
+
+      let sortedKeys = Object.keys(filteredGrouped).sort(function(a, b) {
+        return (orderMap[a] || 999) - (orderMap[b] || 999);
+      });
+
+      let tableBodyHtml = "";
+      if (sortedKeys.length === 0) {
+        tableBodyHtml = `<tr><td colspan="3" style="text-align: center; color: #888; padding: 20px;">該年度內無任何研習時數紀錄</td></tr>`;
+      } else {
+        sortedKeys.forEach(function(categoryName) {
+          tableBodyHtml += `
+            <tr style="background-color: #7f7f7f !important; color: #ffffff !important; font-weight: bold;">
+              <td colspan="2" style="border: 1px solid #666666; padding: 10px; color: #ffffff !important;">${categoryName}</td>
+              <td style="border: 1px solid #666666; padding: 10px; text-align: right; color: #ffffff !important;">${filteredGrouped[categoryName].subTotal}</td>
+            </tr>
+          `;
+          filteredGrouped[categoryName].courses.forEach(function(item, index) {
+            tableBodyHtml += `
+              <tr>
+                <td style="border: 1px solid #dadce0; padding: 10px;">${item.cat2Name}</td>
+                <td style="border: 1px solid #dadce0; padding: 10px;">${(index + 1)}.${item.name}</td>
+                <td style="border: 1px solid #dadce0; padding: 10px; text-align: right;">${item.hours}</td>
+              </tr>
+            `;
+          });
+        });
+      }
+
+      const printHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${displayTitle}_${d.user.name}</title>
+          <style>
+            body { font-family: "Microsoft JhengHei", Arial, sans-serif; color: #3c4043; padding: 0; margin: 0; background: #fff; }
+            .print-container { width: 100%; max-width: 190mm; margin: 0 auto; padding: 10mm; box-sizing: border-box; }
+            .header { border-bottom: 3px solid #1a73e8; padding-bottom: 15px; margin-bottom: 20px; text-align: center; }
+            .header h1 { margin: 0; color: #1a73e8; font-size: 24px; letter-spacing: 2px; }
+            .info-table { width: 100%; margin-bottom: 20px; font-size: 15px; line-height: 1.8; }
+            .main-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; border: 1px solid #7f8c8d; }
+            .main-table th { background-color: #ffffff !important; color: #202124; font-weight: bold; padding: 10px; border: 1px solid #7f8c8d; text-align: left; }
+            .main-table td { padding: 8px 10px; border: 1px solid #dadce0; word-wrap: break-word; }
+            .total-row { font-size: 16px; font-weight: bold; color: #1a73e8; background-color: #e8f0fe !important; }
+            @page { size: A4; margin: 15mm 10mm; }
+            @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+          </style>
+        </head>
+        <body>
+          <div class="print-container">
+            <div class="header">
+              <h1>${displayTitle}</h1>
+            </div>
+            <table class="info-table">
+              <tr>
+                <td style="width: 50%;"><strong>學員姓名：</strong>${d.user.name}</td>
+                <td style="width: 50%;"><strong>身分證字號：</strong>${maskedId}</td>
+              </tr>
+              <tr>
+                <td><strong>服務/開課單位：</strong>${d.user.unit}</td>
+                <td><strong>證明產出日期：</strong>${dateStr}</td>
+              </tr>
+            </table>
+            <table class="main-table">
+              <thead>
+                <tr>
+                  <th style="width: 25%;">項目</th>
+                  <th style="width: 55%;">內容說明</th>
+                  <th style="width: 20%; text-align: right;">時數</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableBodyHtml}
+                <tr class="total-row">
+                  <td colspan="2" style="border: 1px solid #1a73e8; padding: 10px; text-align: right; padding-right: 15px;">累計總研習時數：</td>
+                  <td style="border: 1px solid #1a73e8; padding: 10px; text-align: right;">${filteredTotalHours}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <script>
+            window.onload = function() { setTimeout(function() { window.print(); }, 300); };
+          <\/script>
+        </body>
+        </html>
+      `;
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.open();
+      printWindow.document.write(printHtml);
+      printWindow.document.close();
     }
   </script>
 </body>

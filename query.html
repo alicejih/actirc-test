@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>學員研習時數查詢 - 輔仁大學原資中心</title>
+  
+  <style>
+    body, html {
+      margin: 0; padding: 0; min-height: 100%;
+      font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+      background-color: #f4f7fc;
+      color: #202124;
+    }
+
+    body::before {
+      content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-image: url('https://irc.fju.edu.tw/resources/20260615102746493.jpg');
+      background-size: cover; background-position: center;
+      filter: blur(25px) brightness(0.85); transform: scale(1.05); z-index: -2;
+    }
+
+    .main-wrapper {
+      display: flex; justify-content: center; align-items: flex-start;
+      padding: 30px 15px; box-sizing: border-box; min-height: 100vh;
+    }
+
+    .card {
+      background: #ffffff; padding: 30px; border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+      width: 100%; max-width: 960px; box-sizing: border-box;
+    }
+
+    input[type="text"], select {
+      width: 100%; padding: 12px 14px; margin-top: 6px;
+      border: 1px solid #dadce0; border-radius: 8px; font-size: 15px;
+      box-sizing: border-box; outline: none; transition: 0.2s; background: #fff;
+    }
+    input:focus, select:focus { border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.15); }
+
+    .btn-submit {
+      background-color: #1a73e8; color: white; border: none; padding: 13px 20px;
+      border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;
+      transition: 0.2s; text-align: center; width: 100%; box-sizing: border-box;
+    }
+    .btn-submit:hover { background-color: #1557b0; }
+
+    .loading { display: none; text-align: center; color: #1a73e8; font-weight: bold; margin: 15px 0; font-size: 14px; }
+    .status-msg { margin: 15px 0; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: bold; display: none; text-align: center; }
+    .msg-error { background-color: #fce8e6; color: #c5221f; border: 1px solid #fad2cf; }
+    
+    .result-box { display: none; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 25px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .result-header { border-bottom: 2px solid #1a73e8; padding-bottom: 12px; margin-bottom: 15px; }
+    .student-info { font-size: 15px; line-height: 1.8; color: #3c4043; margin-bottom: 20px; }
+
+    .hours-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; table-layout: fixed; border: 1px solid #7f8c8d; }
+    .hours-table th { background-color: #ffffff; color: #202124; font-weight: bold; padding: 12px 10px; border: 1px solid #7f8c8d; }
+    .hours-table td { padding: 10px; border: 1px solid #dadce0; color: #3c4043; word-wrap: break-word; vertical-align: middle; }
+    
+    .category-row { background-color: #7f7f7f !important; color: #ffffff !important; font-weight: bold; font-size: 15px; }
+    .category-row td { border: 1px solid #666666 !important; color: #ffffff !important; padding: 10px; }
+    
+    .detail-row td { background-color: #ffffff; }
+    .total-row { font-size: 16px; font-weight: bold; color: #1a73e8; background-color: #e8f0fe !important; }
+    .total-row td { border: 1px solid #1a73e8 !important; padding: 12px 10px; }
+    
+    .btn-action-group { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-download { background-color: #127333; color: white; border: none; padding: 12px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; font-size: 15px; }
+    .btn-download:hover { background-color: #0f5d29; }
+  </style>
+</head>
+<body>
+  <div class="main-wrapper">
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0; font-size: 20px;">學員研習時數查詢</h2>
+        <a href="index.html" style="color: #1a73e8; text-decoration: none; font-size: 14px; font-weight: bold;">回首頁</a>
+      </div>
+
+      <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #dadce0;">
+        <span style="font-size: 13px; color: #3c4043; font-weight: bold; display: block; margin-bottom: 8px;">🔍 請輸入查詢身分驗證</span>
+        <input type="text" id="queryIdNumber" placeholder="請輸入填報人身分證字號" style="margin-bottom: 12px; text-transform: uppercase;">
+        
+        <span style="font-size: 13px; color: #3c4043; font-weight: bold; display: block; margin-bottom: 8px;">📅 選擇查詢研習年份</span>
+        <select id="queryYear">
+          <option value="">全部年份</option>
+          <option value="2024">2024 年</option>
+          <option value="2025">2025 年</option>
+          <option value="2026">2026 年</option>
+        </select>
+      </div>
+
+      <button onclick="executeSearch()" id="btnQuery" class="btn-submit">開始查詢時數</button>
+      <div id="queryLoading" class="loading">正在連線資料庫，請稍候...</div>
+      <div id="queryStatusMessage" class="status-msg msg-error"></div>
+
+      <div id="printArea" class="result-box">
+        <div class="result-header">
+          <h3 id="certTitle" style="margin: 0; color: #1a73e8; font-size: 22px; text-align: center; letter-spacing: 2px;">大專校院研習時數證明書</h3>
+        </div>
+        
+        <div class="student-info">
+          <table style="width: 100%; border: none; font-size: 15px;">
+            <tr>
+              <td style="width: 50%; padding: 4px 0; border: none;"><strong>學員姓名：</strong><span id="resName">-</span></td>
+              <td style="width: 50%; padding: 4px 0; border: none;"><strong>身分證字號：</strong><span id="resId">-</span></td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 0; border: none;"><strong>服務單位：</strong><span id="resUnit">-</span></td>
+              <td style="padding: 4px 0; border: none;"><strong>證明產出日期：</strong><span id="printDate">-</span></td>
+            </tr>
+          </table>
+        </div>
+
+        <table class="hours-table">
+          <thead>
+            <tr>
+              <th style="width: 25%; text-align: left;">項目</th>
+              <th style="width: 55%; text-align: left;">內容說明</th>
+              <th style="width: 20%; text-align: right;">時數</th>
+            </tr>
+          </thead>
+          <tbody id="courseTableBody"></tbody>
+        </table>
+        
+        <div class="btn-action-group">
+          <button class="btn-download" onclick="printWithNewWindow()">
+            🖨️ 匯出 PDF / 列印時數證明
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentSearchData = null;
+    let API_URL = localStorage.getItem("FALOCO_GAS_URL") || "";
+
+    function maskIdNumber(idStr) {
+      if (!idStr) return "-";
+      var cleanId = idStr.toString().trim();
+      if (cleanId.length >= 5) {
+        return cleanId.substring(0, 5) + "*****";
+      }
+      return cleanId;
+    }
+
+    async function executeSearch() {
+      const idNo = document.getElementById('queryIdNumber').value.trim().toUpperCase();
+      const year = document.getElementById('queryYear').value;
+      const btn = document.getElementById('btnQuery');
+      const loading = document.getElementById('queryLoading');
+      const statusMsg = document.getElementById('queryStatusMessage');
+      const resultBox = document.getElementById('printArea');
+
+      if (!idNo) {
+        statusMsg.innerText = "⚠️ 請輸入身分證字號後再點擊查詢！";
+        statusMsg.style.display = "block";
+        return;
+      }
+
+      btn.disabled = true;
+      loading.style.display = 'block';
+      statusMsg.style.display = 'none';
+      resultBox.style.display = 'none';
+
+      try {
+        let res;
+        if (API_URL) {
+          const fetchRes = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "queryData", idNumber: idNo, year: year })
+          });
+          res = await fetchRes.json();
+        } else {
+          // 模擬模式
+          await new Promise(r => setTimeout(r, 600));
+          res = {
+            status: "success",
+            name: "測試學員",
+            idNumber: idNo,
+            unit: "輔仁大學原資中心",
+            filteredYear: year,
+            totalHours: 10.5,
+            groupedCourses: {
+              "文化與族群知能": { subTotal: 6.5, courses: [{ cat2Name: "原住民族傳統文化", name: "原住民傳統編織工作坊", hours: 6.5 }] },
+              "學生輔導與陪伴": { subTotal: 4.0, courses: [{ cat2Name: "學習與職涯支持", name: "原民學輔增能研討會", hours: 4.0 }] }
+            },
+            categoryOrder: { "文化與族群知能": 1, "學生輔導與陪伴": 2 }
+          };
+        }
+
+        btn.disabled = false;
+        loading.style.display = 'none';
+
+        if (res.status === "not_found") {
+          statusMsg.innerText = "❌ 查無此身分證字號的填報資料，請確認輸入是否正確。";
+          statusMsg.style.display = "block";
+        } else if (res.status === "error") {
+          statusMsg.innerText = "❌ 系統錯誤：" + res.message;
+          statusMsg.style.display = "block";
+        } else {
+          currentSearchData = res;
+
+          const yearTitleText = res.filteredYear ? res.filteredYear + " 年度輔仁大學原住民族學生資源中心研習時數證明書" : "輔仁大學原住民族學生資源中心研習時數證明書";
+          document.getElementById('certTitle').innerText = yearTitleText;
+          document.getElementById('resName').innerText = res.name;
+          document.getElementById('resId').innerText = maskIdNumber(res.idNumber);
+          document.getElementById('resUnit').innerText = res.unit || "未載明";
+          
+          const today = new Date();
+          document.getElementById('printDate').innerText = today.getFullYear() + '/' + (today.getMonth()+1) + '/' + today.getDate();
+
+          const tbody = document.getElementById('courseTableBody');
+          tbody.innerHTML = ""; 
+
+          let grouped = res.groupedCourses || {};
+          let orderMap = res.categoryOrder || {};
+          
+          let sortedKeys = Object.keys(grouped).sort(function(a, b) {
+            return (orderMap[a] || 999) - (orderMap[b] || 999);
+          });
+
+          if (sortedKeys.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #888; padding: 20px;">⚠️ 該查詢年份內無任何研習時數紀錄</td></tr>`;
+          } else {
+            sortedKeys.forEach(function(categoryName) {
+              let catTr = document.createElement('tr');
+              catTr.className = "category-row";
+              catTr.innerHTML = `
+                <td colspan="2">${categoryName}</td>
+                <td style="text-align: right;">${grouped[categoryName].subTotal}</td>
+              `;
+              tbody.appendChild(catTr);
+
+              grouped[categoryName].courses.forEach(function(item, index) {
+                let tr = document.createElement('tr');
+                tr.className = "detail-row";
+                tr.innerHTML = `
+                  <td>${item.cat2Name}</td>
+                  <td>${(index + 1)}.${item.name}</td>
+                  <td style="text-align: right;">${item.hours}</td>
+                `;
+                tbody.appendChild(tr);
+              });
+            });
+          }
+
+          let totalTr = document.createElement('tr');
+          totalTr.className = "total-row";
+          totalTr.innerHTML = `
+            <td colspan="2" style="text-align: right; padding-right: 15px;">累計總研習時數：</td>
+            <td style="text-align: right;">${res.totalHours}</td>
+          `;
+          tbody.appendChild(totalTr);
+
+          resultBox.style.display = 'block';
+        }
+      } catch (err) {
+        btn.disabled = false;
+        loading.style.display = 'none';
+        statusMsg.innerText = "❌ 伺服器連線失敗，請稍後再試。";
+        statusMsg.style.display = "block";
+      }
+    }
+
+    function printWithNewWindow() {
+      if (!currentSearchData) return;
+
+      const dateStr = document.getElementById('printDate').innerText;
+      const displayTitle = currentSearchData.filteredYear ? currentSearchData.filteredYear + " 年度輔仁大學原住民族學生資源中心研習時數證明書" : "輔仁大學原住民族學生資源中心研習時數證明書";
+      const maskedId = maskIdNumber(currentSearchData.idNumber);
+
+      let tableBodyHtml = "";
+      let grouped = currentSearchData.groupedCourses || {};
+      let orderMap = currentSearchData.categoryOrder || {};
+      let sortedKeys = Object.keys(grouped).sort(function(a, b) {
+        return (orderMap[a] || 999) - (orderMap[b] || 999);
+      });
+
+      if (sortedKeys.length === 0) {
+        tableBodyHtml = `<tr><td colspan="3" style="text-align: center; color: #888; padding: 20px; border: 1px solid #7f8c8d;">無任何研習時數紀錄</td></tr>`;
+      } else {
+        sortedKeys.forEach(function(categoryName) {
+          tableBodyHtml += `
+            <tr style="background-color: #7f7f7f !important; color: #ffffff !important; font-weight: bold;">
+              <td colspan="2" style="border: 1px solid #666666; padding: 10px; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">${categoryName}</td>
+              <td style="border: 1px solid #666666; padding: 10px; text-align: right; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">${grouped[categoryName].subTotal}</td>
+            </tr>
+          `;
+
+          grouped[categoryName].courses.forEach(function(item, index) {
+            tableBodyHtml += `
+              <tr>
+                <td style="border: 1px solid #dadce0; padding: 10px;">${item.cat2Name}</td>
+                <td style="border: 1px solid #dadce0; padding: 10px;">${(index + 1)}.${item.name}</td>
+                <td style="border: 1px solid #dadce0; padding: 10px; text-align: right;">${item.hours}</td>
+              </tr>
+            `;
+          });
+        });
+      }
+
+      const printHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${displayTitle}_${currentSearchData.name}</title>
+          <style>
+            body { font-family: "Microsoft JhengHei", Arial, sans-serif; color: #3c4043; padding: 0; margin: 0; background: #fff; }
+            .print-container { width: 100%; max-width: 190mm; margin: 0 auto; padding: 10mm; box-sizing: border-box; }
+            .header { border-bottom: 3px solid #1a73e8; padding-bottom: 15px; margin-bottom: 20px; text-align: center; }
+            .header h1 { margin: 0; color: #1a73e8; font-size: 26px; letter-spacing: 2px; }
+            .info-table { width: 100%; margin-bottom: 25px; font-size: 16px; line-height: 1.8; }
+            .main-table { width: 100%; border-collapse: collapse; font-size: 15px; table-layout: fixed; border: 1px solid #7f8c8d; }
+            .main-table th { background-color: #ffffff !important; color: #202124; font-weight: bold; padding: 12px; border: 1px solid #7f8c8d; text-align: left; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .main-table td { padding: 10px; border: 1px solid #dadce0; word-wrap: break-word; }
+            .total-row { font-size: 17px; font-weight: bold; color: #1a73e8; background-color: #e8f0fe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            @page { size: A4; margin: 15mm 10mm 15mm 10mm; }
+            @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+          </style>
+        </head>
+        <body>
+          <div class="print-container">
+            <div class="header">
+              <h1>${displayTitle}</h1>
+            </div>
+            <table class="info-table">
+              <tr>
+                <td style="width: 50%;"><strong>學員姓名：</strong>${currentSearchData.name}</td>
+                <td style="width: 50%;"><strong>身分證字號：</strong>${maskedId}</td>
+              </tr>
+              <tr>
+                <td><strong>服務單位：</strong>${currentSearchData.unit || "未載明"}</td>
+                <td><strong>證明產出日期：</strong>${dateStr}</td>
+              </tr>
+            </table>
+            <table class="main-table">
+              <thead>
+                <tr>
+                  <th style="width: 25%;">項目</th>
+                  <th style="width: 55%;">內容說明</th>
+                  <th style="width: 20%; text-align: right;">時數</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableBodyHtml}
+                <tr class="total-row">
+                  <td colspan="2" style="border: 1px solid #1a73e8; padding: 12px; text-align: right; padding-right: 15px;">累計總研習時數：</td>
+                  <td style="border: 1px solid #1a73e8; padding: 12px; text-align: right;">${currentSearchData.totalHours}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <script>
+            window.onload = function() { setTimeout(function() { window.print(); }, 300); };
+          <\/script>
+        </body>
+        </html>
+      `;
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.open();
+      printWindow.document.write(printHtml);
+      printWindow.document.close();
+    }
+  </script>
+</body>
+</html>
