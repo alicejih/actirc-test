@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2026 現場活動互動測試</title>
+  <title>輔仁大學原資中心 - Faloco 增能護照管理平臺</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,220 +11,746 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Noto Sans TC', sans-serif; }
-    @keyframes pulse-slow {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-    .animate-pulse-slow {
-      animation: pulse-slow 2s infinite ease-in-out;
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      body { background: white !important; color: black !important; }
     }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center py-8 px-4 sm:px-6">
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center">
 
-  <!-- Header -->
-  <header class="max-w-md w-full text-center mb-8">
-    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold mb-3 border border-emerald-500/30">
-      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-      GitHub Pages 雲端託管・即時在線
+  <!-- ===============================
+       全域設定通知列 (若尚未填入 GAS URL)
+       =============================== -->
+  <div id="gasWarningBanner" class="w-full bg-amber-500/20 border-b border-amber-500/40 text-amber-300 text-xs py-2 px-4 text-center font-medium no-print">
+    ⚠️ 目前使用「前端展示模式」。請在設定或程式中填入你的 GAS Web App URL 即可真正連線試算表！
+    <button onclick="promptForGasUrl()" class="ml-2 underline font-bold hover:text-white">點此設定 API 網址</button>
+  </div>
+
+  <!-- 頂部 Header -->
+  <header class="w-full max-w-4xl px-4 py-6 flex items-center justify-between no-print">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-rose-600 flex items-center justify-center font-black text-xl text-white shadow-lg shadow-amber-500/30">
+        F
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-white leading-tight">輔仁大學原住民族學生資源中心</h1>
+        <p class="text-xs text-amber-400 font-medium tracking-wide">Faloco 增能護照・研習時數管理平臺</p>
+      </div>
     </div>
-    <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-white mb-2 bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 bg-clip-text text-transparent">
-      2026 現場活動互動
-    </h1>
-    <p class="text-slate-400 text-sm">
-      零伺服器維護・免登入秒開・直串 Google 試算表
-    </p>
+
+    <!-- 登入後狀態 -->
+    <div id="userHeaderBar" class="hidden items-center gap-3">
+      <div class="text-right">
+        <div id="headerUserName" class="text-sm font-bold text-white"></div>
+        <div id="headerUserUnit" class="text-xs text-slate-400"></div>
+      </div>
+      <button onclick="handleLogout()" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg transition">
+        登出
+      </button>
+    </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="max-w-md w-full space-y-6">
-
-    <!-- Card 1: 檔案下載專區 -->
-    <section class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-5 shadow-xl backdrop-blur-sm">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-xl">📂</span>
-        <h2 class="text-lg font-bold text-slate-100">活動資料下載</h2>
-      </div>
-      <p class="text-slate-400 text-xs mb-4">
-        檔案存放在 GitHub 靜態資料庫，現場掃碼即可極速直接下載。
-      </p>
-      <a href="download/活動手冊範例.txt" download class="w-full flex items-center justify-between px-4 py-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl transition duration-150 group">
-        <div class="flex items-center gap-3">
-          <span class="text-2xl group-hover:scale-110 transition duration-150">📄</span>
-          <div class="text-left">
-            <div class="text-sm font-semibold text-white">活動手冊範例.txt</div>
-            <div class="text-xs text-slate-400">點擊直接下載到手機或電腦</div>
-          </div>
+  <!-- ===============================
+       頁面 1：學員驗證登入頁面
+       =============================== -->
+  <section id="loginView" class="w-full max-w-md px-4 py-8 space-y-6 flex-1 flex flex-col justify-center">
+    <div class="bg-slate-800/90 border border-slate-700 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-sm">
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 text-3xl mb-3 border border-amber-500/20">
+          🪪
         </div>
-        <span class="text-cyan-400 font-bold text-xs bg-cyan-950 px-2 py-1 rounded border border-cyan-800">下載</span>
-      </a>
-    </section>
-
-    <!-- Card 2: 現場活動簽到表單 (串接 Google Sheets) -->
-    <section class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-5 shadow-xl backdrop-blur-sm">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <span class="text-xl">✍️</span>
-          <h2 class="text-lg font-bold text-slate-100">現場簽到登記</h2>
-        </div>
-        <span class="text-xs bg-purple-950 text-purple-300 border border-purple-800 px-2 py-0.5 rounded-full">
-          即時回填試算表
-        </span>
+        <h2 class="text-2xl font-black text-white">學員護照登入</h2>
+        <p class="text-xs text-slate-400 mt-1">請輸入身分證字號與出生年月日核對名冊</p>
       </div>
 
-      <form id="checkinForm" class="space-y-3">
+      <form id="loginForm" class="space-y-4">
         <div>
-          <label for="userName" class="block text-xs font-medium text-slate-300 mb-1">您的姓名 <span class="text-rose-400">*</span></label>
-          <input type="text" id="userName" required placeholder="例如：王小明" class="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-cyan-500 transition">
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">身分證字號 <span class="text-rose-400">*</span></label>
+          <input type="text" id="loginId" required placeholder="例如：A123456789" class="w-full px-4 py-3 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 uppercase tracking-wider focus:outline-none focus:border-amber-500 transition">
         </div>
 
         <div>
-          <label for="userRole" class="block text-xs font-medium text-slate-300 mb-1">所屬單位 / 學校</label>
-          <input type="text" id="userRole" placeholder="例如：原資中心 / 青年代表" class="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-cyan-500 transition">
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">出生年月日 (西元8碼) <span class="text-rose-400">*</span></label>
+          <input type="text" id="loginBirth" required placeholder="例如：19980520" maxlength="10" class="w-full px-4 py-3 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 tracking-wider focus:outline-none focus:border-amber-500 transition">
+          <p class="text-[11px] text-slate-500 mt-1">輸入西元 8 碼數字（系統會自動格式化）</p>
         </div>
 
-        <div>
-          <label for="userMessage" class="block text-xs font-medium text-slate-300 mb-1">想說的一句話 / 祝福</label>
-          <textarea id="userMessage" rows="2" placeholder="活動順利！" class="w-full px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-cyan-500 transition resize-none"></textarea>
-        </div>
-
-        <button type="submit" id="submitBtn" class="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-cyan-500/20 active:scale-[0.98] transition flex items-center justify-center gap-2">
-          <span>完成簽到送出</span>
-          <span id="btnSpinner" class="hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+        <button type="submit" id="loginSubmitBtn" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 active:scale-[0.98] transition flex items-center justify-center gap-2">
+          <span>進入護照平臺</span>
+          <span id="loginSpinner" class="hidden w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
         </button>
       </form>
 
-      <!-- 成功提示視窗 -->
-      <div id="successBox" class="hidden mt-4 p-4 rounded-xl bg-emerald-950/80 border border-emerald-600/50 text-emerald-300 text-sm">
-        <div class="font-bold flex items-center gap-2 mb-1">
-          <span>🎉</span> 簽到成功！
+      <div id="loginErrorBox" class="hidden mt-4 p-3 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 text-xs leading-relaxed"></div>
+    </div>
+
+    <!-- 規章與說明 -->
+    <div class="text-center text-xs text-slate-500 space-y-2">
+      <p>初次申報或有任何問題，請洽輔仁大學原資中心專任助理。</p>
+      <a href="download/活動手冊範例.txt" download class="inline-flex items-center gap-1 text-amber-400/80 hover:text-amber-300 hover:underline">
+        <span>📄</span> 下載增能護照實施說明檔案
+      </a>
+    </div>
+  </section>
+
+  <!-- ===============================
+       頁面 2：學員專區儀表板 (Dashboard)
+       =============================== -->
+  <section id="dashboardView" class="hidden w-full max-w-4xl px-4 py-6 space-y-6 flex-1">
+    
+    <!-- 學員名片與累計時數大卡片 -->
+    <div class="bg-gradient-to-br from-slate-800 to-slate-800/60 border border-slate-700/80 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+      <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold mb-2">
+            <span>✨</span> 認證學員
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
+            <span id="dashUserName">學員姓名</span>
+            <span id="dashUserUnit" class="text-xs font-normal text-slate-400 bg-slate-700/60 px-2.5 py-1 rounded-lg border border-slate-600">服務單位</span>
+          </h2>
+          <p class="text-xs text-slate-400 mt-1" id="dashUserId">身分證字號：-</p>
         </div>
-        <p class="text-xs text-emerald-400/90 leading-relaxed" id="successMsg">
-          您的簽到資料已成功傳送！工作人員試算表已即時記錄。
-        </p>
-      </div>
-    </section>
 
-    <!-- Card 3: 現場好運抽獎小遊戲 -->
-    <section class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-5 shadow-xl backdrop-blur-sm text-center">
-      <div class="flex items-center justify-center gap-2 mb-2">
-        <span class="text-xl">🎰</span>
-        <h2 class="text-lg font-bold text-slate-100">現場幸運號碼</h2>
-      </div>
-      <p class="text-slate-400 text-xs mb-4">
-        點擊抽取你的活動專屬幸運數字
-      </p>
-
-      <div class="my-4">
-        <div id="luckyBox" class="text-4xl font-black text-cyan-400 tracking-wider h-14 flex items-center justify-center bg-slate-900/90 border border-slate-700 rounded-xl">
-          ？
+        <!-- 總時數圓角徽章 -->
+        <div class="bg-slate-900/90 border border-amber-500/40 rounded-2xl p-4 text-center min-w-[150px] shadow-lg">
+          <div class="text-xs text-amber-400/90 font-medium">累計研習總時數</div>
+          <div class="text-3xl sm:text-4xl font-black text-white mt-1">
+            <span id="dashTotalHours" class="text-amber-400">0.0</span>
+            <span class="text-sm font-normal text-slate-400 ml-1">小時</span>
+          </div>
         </div>
       </div>
 
-      <button id="drawBtn" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm rounded-lg shadow-md active:scale-95 transition">
-        🎲 抽取幸運號碼
-      </button>
-    </section>
+      <!-- 快捷操作列 -->
+      <div class="mt-6 pt-6 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-3 no-print">
+        <button onclick="openApplyModal()" class="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm rounded-xl shadow-md active:scale-95 transition flex items-center gap-2">
+          <span>➕</span> 自主申報新時數
+        </button>
 
-    <!-- Card 4: 架構說明卡 -->
-    <section class="bg-slate-800/40 border border-slate-800 rounded-xl p-4 text-xs text-slate-400 space-y-2">
-      <div class="font-bold text-slate-300">💡 運作機制：</div>
-      <div class="flex items-center gap-2 text-slate-300">
-        <span class="px-2 py-0.5 rounded bg-slate-700 text-[11px]">1. 網頁端</span>
-        <span>GitHub Pages 全球 CDN 秒開（不卡 Google 登入）</span>
+        <button onclick="window.print()" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold rounded-xl border border-slate-600 active:scale-95 transition flex items-center gap-2">
+          <span>🖨️</span> 列印時數清冊
+        </button>
       </div>
-      <div class="flex items-center gap-2 text-slate-300">
-        <span class="px-2 py-0.5 rounded bg-slate-700 text-[11px]">2. 資料端</span>
-        <span>背景默默傳到 Google Apps Script 寫入試算表</span>
-      </div>
-      <div class="flex items-center gap-2 text-slate-300">
-        <span class="px-2 py-0.5 rounded bg-slate-700 text-[11px]">3. 變更維護</span>
-        <span>直接告訴我需求，30 秒自動更新發布完成！</span>
-      </div>
-    </section>
+    </div>
 
-  </main>
+    <!-- 依「課程分類」歸納時數統計卡片 -->
+    <div class="bg-slate-800/70 border border-slate-700 rounded-3xl p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>📊</span> 各領域時數歸納統計
+        </h3>
+        <span class="text-xs text-slate-400">依分類標準自動彙整</span>
+      </div>
 
-  <footer class="mt-8 text-center text-xs text-slate-600">
-    2026 Event Showcase • Powered by GitHub Pages
+      <div id="categoryCardsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <!-- 動態渲染各大類時數卡片 -->
+      </div>
+    </div>
+
+    <!-- 研習申報歷史明細總表 -->
+    <div class="bg-slate-800/70 border border-slate-700 rounded-3xl p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <span>📜</span> 研習歷程申報清單
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">最新紀錄排在最上方；「待審核」之紀錄可自行修改或撤銷</p>
+        </div>
+      </div>
+
+      <!-- 表格容器 -->
+      <div class="overflow-x-auto rounded-2xl border border-slate-700">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-900/90 text-slate-400 font-semibold border-b border-slate-700">
+            <tr>
+              <th class="py-3 px-4">課程名稱</th>
+              <th class="py-3 px-4">領域類別</th>
+              <th class="py-3 px-4">研習時間</th>
+              <th class="py-3 px-4 text-center">時數</th>
+              <th class="py-3 px-4 text-center">審核狀態</th>
+              <th class="py-3 px-4 text-center">佐證文件</th>
+              <th class="py-3 px-4 text-center no-print">操作</th>
+            </tr>
+          </thead>
+          <tbody id="recordsTableBody" class="divide-y divide-slate-700/60 text-slate-300">
+            <!-- 動態渲染紀錄列 -->
+          </tbody>
+        </table>
+      </div>
+
+      <div id="noRecordsMsg" class="hidden text-center py-8 text-slate-500 text-xs">
+        尚未有申報紀錄，請點擊上方按鈕自主申報第一筆時數！
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===============================
+       彈跳視窗：自主申報 / 修改 Modal
+       =============================== -->
+  <div id="applyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm no-print">
+    <div class="bg-slate-800 border border-slate-700 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
+      
+      <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+        <h3 id="modalTitle" class="text-lg font-bold text-white flex items-center gap-2">
+          <span>➕</span> 自主申報研習時數
+        </h3>
+        <button onclick="closeApplyModal()" class="text-slate-400 hover:text-white text-lg p-1">✕</button>
+      </div>
+
+      <form id="applyForm" class="space-y-4">
+        <input type="hidden" id="editRecordId" value="">
+
+        <!-- 課程大類連動選單 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">課程領域類別 <span class="text-rose-400">*</span></label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <select id="mainCatSelect" required class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
+              <option value="">請選擇大類...</option>
+            </select>
+            <select id="subCatSelect" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
+              <option value="">請選擇小類...</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">研習課程名稱 <span class="text-rose-400">*</span></label>
+          <input type="text" id="applyCourseName" required placeholder="例如：原住民族文化敏感度與學生輔導工作坊" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">開始時間 <span class="text-rose-400">*</span></label>
+            <input type="datetime-local" id="applyStartTime" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">結束時間 <span class="text-rose-400">*</span></label>
+            <input type="datetime-local" id="applyEndTime" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">申請時數 (小時) <span class="text-rose-400">*</span></label>
+          <input type="number" id="applyHours" step="0.5" min="0.5" required placeholder="例如：3" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
+        </div>
+
+        <!-- 佐證檔案上傳 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">上傳佐證照片或檔案 (選填)</label>
+          <input type="file" id="applyFileInput" accept="image/*,application/pdf" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-400 file:mr-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-400">
+          <p class="text-[11px] text-slate-500 mt-1">支援證書、簽到退照或公文照片，將自動上傳至雲端硬碟。</p>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-3">
+          <button type="button" onclick="closeApplyModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl text-xs font-semibold">取消</button>
+          <button type="submit" id="applySubmitBtn" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs shadow-md active:scale-95 flex items-center gap-1.5">
+            <span id="applyBtnText">確認送出申報</span>
+            <span id="applySpinner" class="hidden w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="w-full py-6 text-center text-xs text-slate-600 no-print">
+    輔仁大學原住民族學生資源中心 • Faloco 增能護照平臺
   </footer>
 
+  <!-- ===============================
+       JavaScript 核心互動邏輯
+       =============================== -->
   <script>
-    // -------------------------------------------------------------
-    // ⚙️ GAS Webhook 網址設定
-    // 如果你有部署 GAS Web App，直接把網址貼在下方引號中
-    // -------------------------------------------------------------
-    const GAS_WEBHOOK_URL = ""; 
+    // ⚙️ GAS Webhook API 網址 (儲存在 localStorage，可隨時自訂)
+    let API_URL = localStorage.getItem("FALOCO_GAS_URL") || "";
 
-    // 表單處理
-    const form = document.getElementById('checkinForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const btnSpinner = document.getElementById('btnSpinner');
-    const successBox = document.getElementById('successBox');
-    const successMsg = document.getElementById('successMsg');
+    // 狀態記憶
+    let currentUser = null;
+    let currentRecords = [];
+    let courseCategories = [];
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    // 預設分類字典備用 (若 API 尚未設定)
+    const DEFAULT_COURSE_CATEGORIES = [
+      { mainCategory: "文化與族群知能", subCategories: ["原住民族傳統文化", "當代族群議題", "語言與文化振興"] },
+      { mainCategory: "學生輔導與陪伴", subCategories: ["學習與職涯支持", "心理與生活適應", "家庭與社區連結"] },
+      { mainCategory: "行政與法規知能", subCategories: ["專案執行與核銷", "原民政策與法規", "資訊與平臺應用"] }
+    ];
 
-      const name = document.getElementById('userName').value.trim();
-      const role = document.getElementById('userRole').value.trim() || '無填寫';
-      const message = document.getElementById('userMessage').value.trim() || '無留言';
+    function promptForGasUrl() {
+      const input = prompt("請輸入您的 Google Apps Script 網頁應用程式網址 (Web App URL)：", API_URL);
+      if (input !== null) {
+        API_URL = input.trim();
+        localStorage.setItem("FALOCO_GAS_URL", API_URL);
+        checkGasBanner();
+        if (API_URL) fetchCourseCategories();
+      }
+    }
 
-      submitBtn.disabled = true;
-      btnSpinner.classList.remove('hidden');
+    function checkGasBanner() {
+      const banner = document.getElementById("gasWarningBanner");
+      if (API_URL && API_URL.trim() !== "") {
+        banner.classList.add("hidden");
+      } else {
+        banner.classList.remove("hidden");
+      }
+    }
+    checkGasBanner();
 
-      const payload = {
-        timestamp: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-        name: name,
-        role: role,
-        message: message
+    // 格式化日期輸入 (將任何格式整理為 YYYYMMDD)
+    function normalizeDateInput(val) {
+      return (val || "").toString().replace(/\D/g, "");
+    }
+
+    // -----------------------------------------------------------------
+    // 1. 讀取課程分類選單 (動態填入下拉選單)
+    // -----------------------------------------------------------------
+    async function fetchCourseCategories() {
+      if (API_URL) {
+        try {
+          const res = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "getCourses" })
+          });
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            courseCategories = data;
+            populateCategoryDropdowns();
+            return;
+          }
+        } catch (e) {
+          console.warn("讀取課程分類失敗，改用預設分類：", e);
+        }
+      }
+      courseCategories = DEFAULT_COURSE_CATEGORIES;
+      populateCategoryDropdowns();
+    }
+
+    function populateCategoryDropdowns() {
+      const mainSelect = document.getElementById("mainCatSelect");
+      const subSelect = document.getElementById("subCatSelect");
+      mainSelect.innerHTML = '<option value="">請選擇大類...</option>';
+
+      courseCategories.forEach(cat => {
+        const opt = document.createElement("option");
+        opt.value = cat.mainCategory;
+        opt.textContent = cat.mainCategory;
+        mainSelect.appendChild(opt);
+      });
+
+      mainSelect.onchange = () => {
+        const selected = mainSelect.value;
+        subSelect.innerHTML = '<option value="">請選擇小類...</option>';
+        const found = courseCategories.find(c => c.mainCategory === selected);
+        if (found && found.subCategories) {
+          found.subCategories.forEach(sub => {
+            const opt = document.createElement("option");
+            opt.value = sub;
+            opt.textContent = sub;
+            subSelect.appendChild(opt);
+          });
+        }
       };
+    }
+    fetchCourseCategories();
+
+    // -----------------------------------------------------------------
+    // 2. 登入邏輯
+    // -----------------------------------------------------------------
+    const loginForm = document.getElementById("loginForm");
+    const loginSubmitBtn = document.getElementById("loginSubmitBtn");
+    const loginSpinner = document.getElementById("loginSpinner");
+    const loginErrorBox = document.getElementById("loginErrorBox");
+
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      loginErrorBox.classList.add("hidden");
+      const idNumber = document.getElementById("loginId").value.trim().toUpperCase();
+      const birthDate = normalizeDateInput(document.getElementById("loginBirth").value);
+
+      if (!idNumber || !birthDate) {
+        showLoginError("身分證字號與出生年月日皆為必填！");
+        return;
+      }
+
+      loginSubmitBtn.disabled = true;
+      loginSpinner.classList.remove("hidden");
 
       try {
-        if (GAS_WEBHOOK_URL && GAS_WEBHOOK_URL.trim() !== "") {
-          // 真實發送至 GAS (使用 no-cors 模式避開跨域阻擋)
-          await fetch(GAS_WEBHOOK_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+        if (API_URL) {
+          // 真實連線 GAS
+          const res = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({
+              action: "getDashboard",
+              idNumber: idNumber,
+              birthDate: birthDate
+            })
           });
-          successMsg.textContent = `感謝 ${name}！您的簽到已成功即時寫入 Google 試算表！`;
+          const data = await res.json();
+          if (data.status === "success") {
+            currentUser = { ...data.user, birthDate: birthDate };
+            renderDashboard(data);
+          } else {
+            showLoginError(data.message || "身分驗證失敗，請核對身分證或生日！");
+          }
         } else {
-          // 尚未設定 GAS 時的模擬展示
-          await new Promise(r => setTimeout(r, 600)); // 模擬網路延遲
-          successMsg.innerHTML = `【測試模式】感謝 <b>${name}</b>！<br>目前尚未填入 GAS Webhook 網址，此為前端模擬成功畫面。<br>一旦填入 GAS 網址，這筆資料將直接出現在你的 Google 試算表！`;
+          // 模擬模式
+          await new Promise(r => setTimeout(r, 600));
+          currentUser = {
+            name: "測試學員",
+            idNumber: idNumber,
+            unit: "輔仁大學原資中心",
+            birthDate: birthDate
+          };
+          renderMockDashboard();
         }
-
-        successBox.classList.remove('hidden');
-        form.reset();
       } catch (err) {
-        alert('發送時發生錯誤：' + err);
+        showLoginError("連線伺服器失敗：" + err.toString());
       } finally {
-        submitBtn.disabled = false;
-        btnSpinner.classList.add('hidden');
+        loginSubmitBtn.disabled = false;
+        loginSpinner.classList.add("hidden");
       }
     });
 
-    // 抽幸運號碼動畫
-    const drawBtn = document.getElementById('drawBtn');
-    const luckyBox = document.getElementById('luckyBox');
+    function showLoginError(msg) {
+      loginErrorBox.textContent = msg;
+      loginErrorBox.classList.remove("hidden");
+    }
 
-    drawBtn.addEventListener('click', () => {
-      drawBtn.disabled = true;
-      let count = 0;
-      const interval = setInterval(() => {
-        const rand = Math.floor(Math.random() * 900) + 100;
-        luckyBox.textContent = '#' + rand;
-        count++;
-        if (count > 15) {
-          clearInterval(interval);
-          const finalNum = Math.floor(Math.random() * 900) + 100;
-          luckyBox.textContent = '#' + finalNum;
-          drawBtn.disabled = false;
+    // -----------------------------------------------------------------
+    // 3. 渲染儀表板
+    // -----------------------------------------------------------------
+    function renderDashboard(data) {
+      document.getElementById("loginView").classList.add("hidden");
+      document.getElementById("dashboardView").classList.remove("hidden");
+      document.getElementById("userHeaderBar").classList.remove("hidden");
+
+      // 基本資訊
+      document.getElementById("headerUserName").textContent = data.user.name;
+      document.getElementById("headerUserUnit").textContent = data.user.unit;
+      document.getElementById("dashUserName").textContent = data.user.name;
+      document.getElementById("dashUserUnit").textContent = data.user.unit;
+      document.getElementById("dashUserId").textContent = "身分證字號：" + data.user.idNumber;
+      document.getElementById("dashTotalHours").textContent = data.totalHours || 0.0;
+
+      // 渲染分類卡片
+      renderCategoryCards(data.groupedCourses);
+
+      // 渲染明細清單
+      currentRecords = data.records || [];
+      renderRecordsTable(currentRecords);
+    }
+
+    function renderCategoryCards(groupedCourses) {
+      const container = document.getElementById("categoryCardsContainer");
+      container.innerHTML = "";
+
+      if (!groupedCourses || Object.keys(groupedCourses).length === 0) {
+        container.innerHTML = '<div class="text-xs text-slate-500 col-span-full">尚未有已分類之修課紀錄</div>';
+        return;
+      }
+
+      for (let cat in groupedCourses) {
+        const item = groupedCourses[cat];
+        const card = document.createElement("div");
+        card.className = "bg-slate-900/80 border border-slate-700/80 rounded-2xl p-4 flex flex-col justify-between";
+        card.innerHTML = `
+          <div>
+            <div class="text-xs font-semibold text-slate-300 mb-1">${cat}</div>
+            <div class="text-[11px] text-slate-500">修習 ${item.courses ? item.courses.length : 0} 門課程</div>
+          </div>
+          <div class="mt-3 text-right">
+            <span class="text-xl font-bold text-amber-400">${item.subTotal}</span>
+            <span class="text-xs text-slate-400">小時</span>
+          </div>
+        `;
+        container.appendChild(card);
+      }
+    }
+
+    function renderRecordsTable(records) {
+      const tbody = document.getElementById("recordsTableBody");
+      const noRecords = document.getElementById("noRecordsMsg");
+      tbody.innerHTML = "";
+
+      if (!records || records.length === 0) {
+        noRecords.classList.remove("hidden");
+        return;
+      }
+      noRecords.classList.add("hidden");
+
+      records.forEach(rec => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-800/40 transition";
+
+        // 審核狀態徽章顏色
+        let statusBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/30">待審核</span>`;
+        if (rec.status === "已通過" || rec.status === "通過") {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">已通過</span>`;
+        } else if (rec.status === "不通過" || rec.status === "退回") {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] bg-rose-500/20 text-rose-300 border border-rose-500/30">不通過</span>`;
         }
-      }, 60);
+
+        // 佐證連結
+        let fileLink = `<span class="text-slate-500">-</span>`;
+        if (rec.fileUrl && rec.fileUrl.startsWith("http")) {
+          fileLink = `<a href="${rec.fileUrl}" target="_blank" class="text-amber-400 hover:underline">📷 檢視</a>`;
+        }
+
+        // 動作按鈕 (僅待審核可修改/刪除)
+        let actionButtons = `<span class="text-slate-600 text-[11px]">鎖定</span>`;
+        if (rec.canEditOrDelete) {
+          actionButtons = `
+            <div class="flex items-center justify-center gap-2">
+              <button onclick="editRecord('${rec.recordId}')" class="text-amber-400 hover:text-amber-300 font-semibold">修改</button>
+              <button onclick="deleteRecord('${rec.recordId}')" class="text-rose-400 hover:text-rose-300 font-semibold">撤銷</button>
+            </div>
+          `;
+        }
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-medium text-white">${rec.courseName}</td>
+          <td class="py-3 px-4 text-slate-400">${rec.mainCategory} > ${rec.subCategory}</td>
+          <td class="py-3 px-4 text-slate-400 whitespace-nowrap">${rec.startTime} ~ ${rec.endTime}</td>
+          <td class="py-3 px-4 text-center font-bold text-amber-400">${rec.hours}</td>
+          <td class="py-3 px-4 text-center">${statusBadge}</td>
+          <td class="py-3 px-4 text-center">${fileLink}</td>
+          <td class="py-3 px-4 text-center no-print">${actionButtons}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderMockDashboard() {
+      renderDashboard({
+        user: currentUser,
+        totalHours: 12.5,
+        groupedCourses: {
+          "文化與族群知能": { subTotal: 6.5, courses: [{ name: "原民傳統織布技術研習", hours: 6.5 }] },
+          "學生輔導與陪伴": { subTotal: 4.0, courses: [{ name: "原民學生職涯定向研討", hours: 4.0 }] },
+          "行政與法規知能": { subTotal: 2.0, courses: [{ name: "高教深耕計畫管考說明會", hours: 2.0 }] }
+        },
+        records: [
+          {
+            recordId: "MOCK_1",
+            courseName: "原民傳統織布技術研習",
+            mainCategory: "文化與族群知能",
+            subCategory: "原住民族傳統文化",
+            startTime: "2026-04-10 09:00",
+            endTime: "2026-04-10 16:30",
+            hours: 6.5,
+            status: "已通過",
+            fileUrl: "",
+            canEditOrDelete: false
+          },
+          {
+            recordId: "MOCK_2",
+            courseName: "原民學生職涯定向研討",
+            mainCategory: "學生輔導與陪伴",
+            subCategory: "學習與職涯支持",
+            startTime: "2026-05-12 13:30",
+            endTime: "2026-05-12 17:30",
+            hours: 4.0,
+            status: "待審核",
+            fileUrl: "",
+            canEditOrDelete: true
+          }
+        ]
+      });
+    }
+
+    function handleLogout() {
+      currentUser = null;
+      document.getElementById("dashboardView").classList.add("hidden");
+      document.getElementById("userHeaderBar").classList.add("hidden");
+      document.getElementById("loginView").classList.remove("hidden");
+      document.getElementById("loginForm").reset();
+    }
+
+    // -----------------------------------------------------------------
+    // 4. 自主申報與修改紀錄 Modal
+    // -----------------------------------------------------------------
+    const applyModal = document.getElementById("applyModal");
+    const applyForm = document.getElementById("applyForm");
+    const modalTitle = document.getElementById("modalTitle");
+    const applyBtnText = document.getElementById("applyBtnText");
+    const applySubmitBtn = document.getElementById("applySubmitBtn");
+    const applySpinner = document.getElementById("applySpinner");
+
+    function openApplyModal() {
+      document.getElementById("editRecordId").value = "";
+      applyForm.reset();
+      modalTitle.innerHTML = "<span>➕</span> 自主申報研習時數";
+      applyBtnText.textContent = "確認送出申報";
+      applyModal.classList.remove("hidden");
+    }
+
+    function closeApplyModal() {
+      applyModal.classList.add("hidden");
+    }
+
+    function editRecord(recordId) {
+      const rec = currentRecords.find(r => r.recordId === recordId);
+      if (!rec) return;
+
+      document.getElementById("editRecordId").value = recordId;
+      document.getElementById("applyCourseName").value = rec.courseName;
+      document.getElementById("applyHours").value = rec.hours;
+
+      // 填入時間
+      if (rec.startTime && rec.startTime.length >= 16) {
+        document.getElementById("applyStartTime").value = rec.startTime.replace(" ", "T");
+      }
+      if (rec.endTime && rec.endTime.length >= 16) {
+        document.getElementById("applyEndTime").value = rec.endTime.replace(" ", "T");
+      }
+
+      // 填入選單
+      const mainSelect = document.getElementById("mainCatSelect");
+      mainSelect.value = rec.mainCategory;
+      mainSelect.onchange();
+      document.getElementById("subCatSelect").value = rec.subCategory;
+
+      modalTitle.innerHTML = "<span>✏️</span> 修改研習紀錄";
+      applyBtnText.textContent = "儲存修改";
+      applyModal.classList.remove("hidden");
+    }
+
+    // 檔案轉 Base64
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          const res = reader.result;
+          const base64 = res.split(",")[1];
+          resolve({
+            base64: base64,
+            mimeType: file.type,
+            fileName: file.name
+          });
+        };
+        reader.onerror = error => reject(error);
+      });
+    }
+
+    applyForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      const editRecordId = document.getElementById("editRecordId").value;
+      const isEdit = (editRecordId && editRecordId !== "");
+
+      const mainCat = document.getElementById("mainCatSelect").value;
+      const subCat = document.getElementById("subCatSelect").value || "-";
+      const courseClass = mainCat + " > " + subCat;
+      const courseName = document.getElementById("applyCourseName").value.trim();
+      const startTime = document.getElementById("applyStartTime").value.replace("T", " ");
+      const endTime = document.getElementById("applyEndTime").value.replace("T", " ");
+      const hours = document.getElementById("applyHours").value;
+
+      const fileInput = document.getElementById("applyFileInput");
+      let fileData = null;
+      if (fileInput.files && fileInput.files[0]) {
+        fileData = await fileToBase64(fileInput.files[0]);
+      }
+
+      applySubmitBtn.disabled = true;
+      applySpinner.classList.remove("hidden");
+
+      try {
+        if (API_URL) {
+          const actionType = isEdit ? "update" : "apply";
+          const payload = {
+            action: actionType,
+            idNumber: currentUser.idNumber,
+            birthDate: currentUser.birthDate,
+            recordId: editRecordId,
+            courseClass: courseClass,
+            courseName: courseName,
+            startTime: startTime,
+            endTime: endTime,
+            hours: hours,
+            fileData: fileData
+          };
+
+          const res = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          const result = await res.json();
+          if (result.status === "success") {
+            alert(result.message || "操作成功！");
+            closeApplyModal();
+            // 重新刷新儀表板
+            refreshDashboardData();
+          } else {
+            alert("操作失敗：" + (result.message || "未知錯誤"));
+          }
+        } else {
+          // 模擬模式
+          await new Promise(r => setTimeout(r, 600));
+          alert("【模擬模式】" + (isEdit ? "修改成功！" : "申報成功！"));
+          closeApplyModal();
+        }
+      } catch (err) {
+        alert("傳送時發生錯誤：" + err);
+      } finally {
+        applySubmitBtn.disabled = false;
+        applySpinner.classList.add("hidden");
+      }
     });
+
+    async function deleteRecord(recordId) {
+      if (!confirm("確定要撤銷此筆申報紀錄嗎？")) return;
+      if (API_URL) {
+        try {
+          const res = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({
+              action: "delete",
+              idNumber: currentUser.idNumber,
+              birthDate: currentUser.birthDate,
+              recordId: recordId
+            })
+          });
+          const result = await res.json();
+          if (result.status === "success") {
+            alert(result.message || "已成功刪除！");
+            refreshDashboardData();
+          } else {
+            alert("刪除失敗：" + result.message);
+          }
+        } catch (err) {
+          alert("刪除失敗：" + err);
+        }
+      } else {
+        alert("【模擬模式】已撤銷此筆紀錄。");
+      }
+    }
+
+    async function refreshDashboardData() {
+      if (!API_URL || !currentUser) return;
+      const res = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "getDashboard",
+          idNumber: currentUser.idNumber,
+          birthDate: currentUser.birthDate
+        })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        renderDashboard(data);
+      }
+    }
   </script>
 </body>
 </html>
