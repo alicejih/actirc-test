@@ -25,8 +25,8 @@
  *    Col B (1): 身分證字號
  *    Col C (2): 出生年月日
  *    Col D (3): 服務單位
- *    ...
- *    Col L (11): 管理員欄位 (若值為 'V' 則具備審核後台權限)
+ *    Col E (4): 管理員欄位 (若值為 'V' 則具備審核後台權限)
+ *    ... (相容 Col L (11) 亦可)
  * 
  * 3. course (課程分類字典檔)
  *    cId, cFace, cType
@@ -147,8 +147,8 @@ function findMember(idNumber, birthDate) {
     const rowDob = normalizeBirthDate(row[2]); // Col C: 出生日期
 
     if (rowId === targetId && rowDob === targetDob) {
-      // 檢查 Col L (第 12 欄，索引 11) 是否標記為 V
-      const isAdmin = isVMark(row[11]);
+      // 檢查 Col E (第 5 欄，索引 4) 或 Col L (第 12 欄，索引 11) 是否標記為 V
+      const isAdmin = isVMark(row[4]) || isVMark(row[11]);
       return {
         rowIndex: i + 1,
         name: row[0] ? row[0].toString().trim() : "",
