@@ -506,12 +506,14 @@
           badgeClass = "badge-rejected";
         }
 
-        // 佐證檔案按鈕 (直接開新視窗檢視)
+        // 佐證檔案按鈕 (支援純網址與 =HYPERLINK 語法自動提取)
+        let matchedUrl = (r.fileUrl || "").match(/https?:\/\/[^\s"'\)]+/i);
+        let validUrl = matchedUrl ? matchedUrl[0] : "";
         let proofHtml = `<span style="color: #999; font-size: 12px;">無佐證檔案</span>`;
-        if (r.fileUrl && r.fileUrl.startsWith("http")) {
+        if (validUrl) {
           proofHtml = `
             <div style="margin-top: 6px;">
-              <a href="${r.fileUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px; color: #1a73e8; background: #e8f0fe; border-color: #d2e3fc; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+              <a href="${validUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px; color: #1a73e8; background: #e8f0fe; border-color: #d2e3fc; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                 📷 開啟佐證檔案 ↗
               </a>
             </div>

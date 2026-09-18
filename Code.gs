@@ -60,7 +60,7 @@ function doPost(e) {
       return jsonResponse(verifyUser(req.idNumber, req.birthDate));
     } else if (action === "getDashboard") {
       return jsonResponse(getDashboard(req.idNumber, req.birthDate));
-    } else if (action === "apply") {
+    } else if (action === "apply" || action === "logHoursData") {
       return jsonResponse(applyRecord(req));
     } else if (action === "update") {
       return jsonResponse(updateRecord(req));
@@ -124,6 +124,24 @@ function isVMark(val) {
   if (!val) return false;
   const s = val.toString().trim().toUpperCase();
   return s === "V" || s === "TRUE" || s === "YES" || s === "Y";
+}
+
+/**
+ * 從儲存格數值或公式中精準提取乾淨的 URL 網址
+ * 完美支援純網址、=HYPERLINK("https://...", "標籤")、文字等多種型式
+ */
+function extractCleanUrl(val, formula) {
+  const f = formula ? formula.toString().trim() : "";
+  if (f) {
+    const m = f.match(/https?:\/\/[^\s"'\)]+/i);
+    if (m) return m[0];
+  }
+  const v = val ? val.toString().trim() : "";
+  if (v) {
+    const m = v.match(/https?:\/\/[^\s"'\)]+/i);
+    if (m) return m[0];
+  }
+  return "";
 }
 
 /**
@@ -226,6 +244,7 @@ function getDashboard(idNumber, birthDate) {
   if (!sheet) throw new Error("找不到工作表：" + SHEET_RECORDS);
 
   const values = sheet.getDataRange().getValues();
+  const formulas = sheet.getDataRange().getFormulas();
   const records = [];
   let totalHours = 0;
 
@@ -260,7 +279,7 @@ function getDashboard(idNumber, birthDate) {
 
     const h = parseFloat(row[7]) || 0;
     const status = row[8] ? row[8].toString().trim() : "待審核";
-    const fileUrl = row[9] ? row[9].toString().trim() : "";
+    const fileUrl = extractCleanUrl(row[9], formulas[i] ? formulas[i][9] : "");
     const recId = row[10] ? row[10].toString().trim() : ("ROW_" + (i + 1));
 
     if (status === "通過" || status === "已審核") {
@@ -299,7 +318,17 @@ function getDashboard(idNumber, birthDate) {
  * 申報新時數 (含圖片上傳至 Google Drive)
  */
 function applyRecord(req) {
-  const user = findMember(req.idNumber, req.birthDate);
+  let user = null;
+  if (req.birthDate) {
+    user = findMember(req.idNumber, req.birthDate);
+  } else if (req.userName && req.idNumber) {
+    user = {
+      name: req.userName,
+      idNumber: cleanId(req.idNumber),
+      unit: req.courseUnit || "原資中心"
+    };
+  }
+
   if (!user) {
     return { status: "error", message: "身分驗證失敗，無法送出申報！" };
   }
@@ -323,23 +352,25 @@ function applyRecord(req) {
     }
   }
 
+  // 確保寫入純乾淨的 URL 網址字串，絕不使用 =HYPERLINK 公式
+  const pureFileUrl = extractCleanUrl(fileUrl, "");
   const recId = "REC_" + Utilities.formatDate(new Date(), "Asia/Taipei", "yyyyMMddHHmmss") + "_" + Math.floor(Math.random() * 1000);
   const hoursNum = parseFloat(req.hours) || 0;
 
   // 寫入工作表1
   sheet.appendRow([
-    user.name,                 // Col A (0): 姓名
-    user.idNumber,             // Col B (1): 身分證字號
-    user.unit || "原資中心",    // Col C (2): 開課單位/單位
-    req.courseClass || "",     // Col D (3): 課程分類
-    req.courseName || "",      // Col E (4): 課程名稱
-    req.startTime || "",       // Col F (5): 開始時間
-    req.endTime || "",         // Col G (6): 結束時間
-    hoursNum,                  // Col H (7): 時數
-    "待審核",                  // Col I (8): 審核欄位
-    fileUrl,                   // Col J (9): 佐證連結
-    recId,                     // Col K (10): 紀錄ID
-    ""                         // Col L (11): 管理員
+    user.name,                                 // Col A (0): 姓名
+    user.idNumber,                             // Col B (1): 身分證字號
+    req.courseUnit || user.unit || "原資中心",  // Col C (2): 開課單位/單位
+    req.courseClass || "",                     // Col D (3): 課程分類
+    req.courseName || "",                      // Col E (4): 課程名稱
+    req.startTime || "",                       // Col F (5): 開始時間
+    req.endTime || "",                         // Col G (6): 結束時間
+    hoursNum,                                  // Col H (7): 時數
+    "待審核",                                  // Col I (8): 審核欄位
+    pureFileUrl,                               // Col J (9): 佐證連結 (純 URL 網址字串)
+    recId,                                     // Col K (10): 紀錄ID
+    ""                                         // Col L (11): 管理員
   ]);
 
   writeLog("學員申報", user.name + " (" + user.idNumber + ")", `課程：${req.courseName}，時數：${hoursNum}，ID：${recId}`);
@@ -462,6 +493,7 @@ function getAdminDashboard(idNumber, birthDate) {
   if (!sheet) throw new Error("找不到工作表：" + SHEET_RECORDS);
 
   const values = sheet.getDataRange().getValues();
+  const formulas = sheet.getDataRange().getFormulas();
   const allList = [];
   let pendingCount = 0;
   let approvedCount = 0;
@@ -493,7 +525,7 @@ function getAdminDashboard(idNumber, birthDate) {
 
     const hours = parseFloat(row[7]) || 0;
     const status = row[8] ? row[8].toString().trim() : "待審核";
-    const fileUrl = row[9] ? row[9].toString().trim() : "";
+    const fileUrl = extractCleanUrl(row[9], formulas[i] ? formulas[i][9] : "");
     let recId = row[10] ? row[10].toString().trim() : "";
 
     // 若舊資料沒有 UUID，自動補建一個方便後台即時更新

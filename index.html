@@ -590,8 +590,9 @@
           actionHtml = `<span style="color: #999; font-size: 12px;">🔒 已審核鎖定</span>`;
         }
 
-        let linkHtml = (rec.fileUrl && rec.fileUrl.indexOf("http") !== -1) 
-          ? `<br><a href="${rec.fileUrl}" target="_blank" style="font-size: 12px; color: #1a73e8; font-weight: bold;">📷 檢視佐證</a>` 
+        let matchedUrl = (rec.fileUrl || "").match(/https?:\/\/[^\s"'\)]+/i);
+        let linkHtml = matchedUrl 
+          ? `<br><a href="${matchedUrl[0]}" target="_blank" style="font-size: 12px; color: #1a73e8; font-weight: bold;">📷 檢視佐證</a>` 
           : "";
 
         tr.innerHTML = `
