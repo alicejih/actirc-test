@@ -167,7 +167,8 @@
 
       <div class="sub-nav-links">
         <a href="query.html">🔍 免登入查詢與列印時數證明</a> ｜ 
-        <a href="log.html">📝 自主登錄課程時數</a>
+        <a href="log.html">📝 自主登錄課程時數</a> ｜ 
+        <a href="admin.html">🛡️ 管理員審核後台</a>
       </div>
     </div>
 
@@ -179,6 +180,7 @@
           <p>身分證：<span id="dspMaskedId"></span> ｜ 單位：<span id="dspUnit"></span></p>
         </div>
         <div style="display: flex; align-items: center; gap: 12px;">
+          <a id="adminPortalLink" href="admin.html" class="action-btn-sm" style="display: none; background: #fef08a; color: #854d0e; text-decoration: none; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold;">🛡️ 審核後台</a>
           <div class="hours-pill">
             總研習時數：<span id="dspTotalHours" style="font-size: 20px; color: #ffe082;">0</span> 小時
           </div>
@@ -522,6 +524,11 @@
 
         document.getElementById('formAutoName').innerText = res.user.name;
         document.getElementById('formAutoId').innerText = res.user.idNumber;
+
+        const adminLnk = document.getElementById('adminPortalLink');
+        if (adminLnk) {
+          adminLnk.style.display = res.user.isAdmin ? "inline-block" : "none";
+        }
 
         renderRecordsTable(res.records);
       } catch (err) {

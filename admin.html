@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>法路祖部落研習時數 - 管理員審核後台</title>
+  
+  <style>
+    body, html {
+      margin: 0; padding: 0; min-height: 100%;
+      font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+      background-color: #f4f7fc;
+      color: #202124;
+    }
+
+    body::before {
+      content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-image: url('https://irc.fju.edu.tw/resources/20260615102746493.jpg');
+      background-size: cover; background-position: center;
+      filter: blur(25px) brightness(0.85); transform: scale(1.05); z-index: -2;
+    }
+
+    .main-wrapper {
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      padding: 30px 15px; box-sizing: border-box; min-height: 100vh;
+    }
+
+    .card {
+      background: #ffffff; padding: 30px; border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      width: 100%; max-width: 1100px; box-sizing: border-box;
+    }
+
+    /* 輸入框與按鈕 */
+    input[type="text"], input[type="date"], select {
+      width: 100%; padding: 11px 14px; margin-top: 6px;
+      border: 1px solid #dadce0; border-radius: 8px; font-size: 14px;
+      box-sizing: border-box; outline: none; transition: 0.2s; background: #fff;
+    }
+    input:focus, select:focus { border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.15); }
+
+    .btn {
+      border: none; padding: 10px 18px; border-radius: 8px; font-size: 14px;
+      font-weight: bold; cursor: pointer; transition: 0.2s; text-align: center;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-primary { background-color: #1a73e8; color: white; }
+    .btn-primary:hover { background-color: #1557b0; }
+    .btn-success { background-color: #1e8e3e; color: white; }
+    .btn-success:hover { background-color: #137333; }
+    .btn-danger { background-color: #d93025; color: white; }
+    .btn-danger:hover { background-color: #b31412; }
+    .btn-secondary { background-color: #f1f3f4; color: #3c4043; border: 1px solid #dadce0; }
+    .btn-secondary:hover { background-color: #e8eaed; }
+    .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: 6px; }
+
+    /* 管理員頂端資訊列 */
+    .admin-bar {
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      color: white; padding: 22px 26px; border-radius: 14px; margin-bottom: 25px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+      box-shadow: 0 4px 15px rgba(30, 60, 114, 0.25);
+    }
+    .admin-bar h3 { margin: 0 0 6px 0; font-size: 22px; }
+    .admin-bar p { margin: 0; font-size: 14px; opacity: 0.9; }
+
+    /* 統計指標卡片網格 */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px; margin-bottom: 25px;
+    }
+    .stat-card {
+      background: #fff; padding: 18px 20px; border-radius: 12px;
+      border: 1px solid #e0e4e8; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .stat-card .label { font-size: 13px; color: #5f6368; font-weight: bold; margin-bottom: 6px; }
+    .stat-card .num { font-size: 28px; font-weight: 800; line-height: 1.1; }
+    .stat-pending { border-left: 5px solid #b06000; background: #fefcf3; }
+    .stat-pending .num { color: #b06000; }
+    .stat-approved { border-left: 5px solid #1e8e3e; background: #f4fbf6; }
+    .stat-approved .num { color: #1e8e3e; }
+    .stat-rejected { border-left: 5px solid #d93025; background: #fdf5f5; }
+    .stat-rejected .num { color: #d93025; }
+    .stat-total { border-left: 5px solid #1a73e8; background: #f5f9ff; }
+    .stat-total .num { color: #1a73e8; }
+
+    /* 篩選與工具列 */
+    .toolbar {
+      background: #f8f9fa; padding: 16px 20px; border-radius: 12px;
+      border: 1px solid #e8eaed; margin-bottom: 20px;
+      display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;
+    }
+    .filter-item { flex: 1; min-width: 180px; }
+    .filter-item label { font-size: 13px; font-weight: bold; color: #3c4043; display: block; margin-bottom: 4px; }
+
+    /* 表格樣式 */
+    .records-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
+    .records-table th {
+      background: #f1f3f4; padding: 12px 10px; text-align: left;
+      border-bottom: 2px solid #dadce0; color: #202124; font-weight: 700;
+    }
+    .records-table td { padding: 12px 10px; border-bottom: 1px solid #e8eaed; vertical-align: middle; }
+    .records-table tr:hover { background-color: #fbfdff; }
+
+    .badge {
+      padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block;
+    }
+    .badge-pending { background: #fef7e0; color: #b06000; border: 1px solid #f9e2af; }
+    .badge-approved { background: #e6f4ea; color: #137333; border: 1px solid #b7e1cd; }
+    .badge-rejected { background: #fce8e6; color: #c5221f; border: 1px solid #f7c3c0; }
+
+    /* 彈窗 Modal */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.55); z-index: 999; display: none;
+      justify-content: center; align-items: center; padding: 15px; box-sizing: border-box;
+    }
+    .modal-box {
+      background: #fff; width: 100%; max-width: 650px; border-radius: 14px;
+      padding: 25px; max-height: 90vh; overflow-y: auto; box-sizing: border-box;
+      box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+    }
+
+    /* 質感 Toast 提示泡泡 */
+    #toastBox {
+      position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+      z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+    }
+    .toast-item {
+      pointer-events: auto; padding: 12px 22px; border-radius: 30px; font-size: 14px;
+      font-weight: bold; box-shadow: 0 6px 20px rgba(0,0,0,0.18); display: flex; align-items: center; gap: 8px;
+      animation: toastSlideDown 0.3s ease-out forwards;
+    }
+    .toast-success { background-color: #1e8e3e; color: white; }
+    .toast-error { background-color: #d93025; color: white; }
+    .toast-info { background-color: #1a73e8; color: white; }
+
+    @keyframes toastSlideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .sub-nav-links {
+      margin-top: 22px; text-align: center; font-size: 13px; color: #5f6368;
+    }
+    .sub-nav-links a {
+      color: #1a73e8; text-decoration: none; margin: 0 8px; font-weight: bold;
+    }
+    .sub-nav-links a:hover { text-decoration: underline; }
+
+    @media (max-width: 768px) {
+      .card { padding: 20px 15px; }
+      .admin-bar { flex-direction: column; align-items: flex-start; }
+      .records-table { display: block; overflow-x: auto; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 浮動通知容器 -->
+  <div id="toastBox"></div>
+
+  <div class="main-wrapper">
+    <!-- 1. 管理員身分登入卡片 -->
+    <div id="adminLoginCard" class="card" style="max-width: 480px; text-align: center;">
+      <div style="font-size: 42px; margin-bottom: 10px;">🛡️</div>
+      <h2 style="margin: 0 0 8px 0; color: #1a73e8; font-size: 24px;">法路祖部落研習時數</h2>
+      <h3 style="margin: 0 0 16px 0; color: #202124; font-size: 18px;">管理員審核後台</h3>
+      <p style="color: #5f6368; font-size: 14px; margin-bottom: 24px;">
+        此介面僅限擁有審核權限（管理員欄位標記 V）之管理人員登入使用。
+      </p>
+
+      <div style="text-align: left; margin-bottom: 16px;">
+        <label style="font-size: 13px; font-weight: bold; color: #3c4043;">管理員身分證字號</label>
+        <input type="text" id="adminIdNumber" placeholder="例如：A123456789" style="text-transform: uppercase;">
+      </div>
+
+      <div style="text-align: left; margin-bottom: 24px;">
+        <label style="font-size: 13px; font-weight: bold; color: #3c4043;">出生年月日 (西元)</label>
+        <input type="date" id="adminBirthDate">
+        <small style="color: #888; font-size: 12px; margin-top: 4px; display: block;">請點選日曆選擇西元年月日</small>
+      </div>
+
+      <button id="btnAdminLogin" class="btn btn-primary" style="width: 100%; padding: 13px;" onclick="doAdminLogin()">
+        🔐 驗證權限並登入後台
+      </button>
+
+      <div class="sub-nav-links">
+        <a href="index.html">🏠 回學員時數首頁</a> ｜ 
+        <a href="query.html">🔍 免登入時數查詢</a>
+      </div>
+    </div>
+
+    <!-- 2. 管理員審核後台管理主頁 -->
+    <div id="adminDashboardCard" class="card" style="display: none;">
+      <!-- 頂部管理員資訊列 -->
+      <div class="admin-bar">
+        <div>
+          <h3 id="dspAdminName">管理員審核專區</h3>
+          <p>
+            帳號：<span id="dspAdminId"></span> ｜ 單位：<span id="dspAdminUnit"></span> ｜ 
+            <span style="background: rgba(255,255,255,0.25); padding: 3px 8px; border-radius: 4px; font-weight: bold;">後台審核員</span>
+          </p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary btn-sm" onclick="loadAdminDashboard(true)">🔄 重新整理</button>
+          <button class="btn btn-danger btn-sm" onclick="doAdminLogout()">登出</button>
+        </div>
+      </div>
+
+      <!-- 統計指標卡片 -->
+      <div class="stats-grid">
+        <div class="stat-card stat-pending">
+          <div class="label">⏳ 待審核件數</div>
+          <div class="num" id="statPendingCount">0</div>
+        </div>
+        <div class="stat-card stat-approved">
+          <div class="label">✅ 已核定通過</div>
+          <div class="num" id="statApprovedCount">0</div>
+        </div>
+        <div class="stat-card stat-rejected">
+          <div class="label">❌ 未通過件數</div>
+          <div class="num" id="statRejectedCount">0</div>
+        </div>
+        <div class="stat-card stat-total">
+          <div class="label">📊 累計總申報件數</div>
+          <div class="num" id="statTotalCount">0</div>
+        </div>
+      </div>
+
+      <!-- 篩選工具列 -->
+      <div class="toolbar">
+        <div class="filter-item" style="max-width: 180px;">
+          <label>審核狀態篩選</label>
+          <select id="filterStatus" onchange="applyFilters()">
+            <option value="ALL">全部狀態</option>
+            <option value="待審核" selected>⏳ 待審核 (優先處理)</option>
+            <option value="通過">✅ 已通過</option>
+            <option value="不通過">❌ 不通過</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>關鍵字搜尋 (學員姓名 / 身分證 / 課程名稱)</label>
+          <input type="text" id="searchKeyword" placeholder="輸入關鍵字即時搜尋..." oninput="applyFilters()">
+        </div>
+        <div class="filter-item" style="max-width: 180px;">
+          <label>開課單位 / 分類篩選</label>
+          <select id="filterCategory" onchange="applyFilters()">
+            <option value="ALL">全部分類</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 列表資訊列 -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 8px 0;">
+        <span style="font-size: 14px; font-weight: bold; color: #3c4043;">
+          審核清單 (共 <span id="filteredCount">0</span> 筆資料)
+        </span>
+        <span style="font-size: 12px; color: #5f6368;">點擊右側按鈕可即時核准或否決</span>
+      </div>
+
+      <!-- 紀錄審核表格 -->
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th style="width: 16%;">學員資訊</th>
+            <th style="width: 25%;">課程名稱 / 佐證資料</th>
+            <th style="width: 18%;">分類 / 開課單位</th>
+            <th style="width: 13%;">活動時間</th>
+            <th style="width: 7%; text-align: right;">時數</th>
+            <th style="width: 9%; text-align: center;">狀態</th>
+            <th style="width: 12%; text-align: center;">審核操作</th>
+          </tr>
+        </thead>
+        <tbody id="adminRecordsTbody">
+          <tr><td colspan="7" style="text-align: center; color: #888; padding: 30px;">載入中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 佐證圖片檢視彈窗 -->
+  <div id="imageModal" class="modal-overlay" onclick="closeImageModal(event)">
+    <div class="modal-box" style="text-align: center; max-width: 700px;">
+      <h3 style="margin-top: 0; color: #202124;" id="imageModalTitle">佐證文件預覽</h3>
+      <div style="margin: 15px 0; min-height: 200px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px; overflow: hidden;">
+        <img id="imageModalImg" src="" alt="佐證圖片" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 6px;">
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+        <a id="imageModalOpenNew" href="#" target="_blank" class="btn btn-secondary btn-sm">在新分頁開啟原始檔案</a>
+        <button class="btn btn-primary btn-sm" onclick="closeImageModalDirect()">關閉預覽</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 確認審核操作彈窗 -->
+  <div id="confirmModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 440px; text-align: center;">
+      <div id="confirmIcon" style="font-size: 40px; margin-bottom: 12px;">❓</div>
+      <h3 id="confirmTitle" style="margin: 0 0 10px 0; color: #202124;">確認審核結果</h3>
+      <p id="confirmMessage" style="color: #5f6368; font-size: 14px; margin-bottom: 22px; line-height: 1.6;"></p>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button class="btn btn-secondary" onclick="closeConfirmModal()">取消</button>
+        <button id="btnConfirmExecute" class="btn btn-primary">確認執行</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript 核心邏輯 -->
+  <script>
+    // 永久綁定 GAS Web App API 網址
+    const API_URL = "https://script.google.com/macros/s/AKfycbw2bmmDg25Qa276KICvl9lB--nkDRPeUb-K7tcJ6aa3Dclr2SiZP-C3ts2JM6-zwT-H/exec";
+
+    let currentAdmin = null;
+    let allRecords = [];
+    let categoriesSet = new Set();
+
+    // API 通訊函式
+    async function callGasApi(action, payload = {}) {
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: action, ...payload })
+        });
+        return await res.json();
+      } catch (err) {
+        throw new Error("伺服器連線失敗：" + err.toString());
+      }
+    }
+
+    // UI Toast 提示通知
+    function showToast(text, type = "info") {
+      const box = document.getElementById('toastBox');
+      const toast = document.createElement('div');
+      toast.className = `toast-item toast-${type}`;
+      let icon = "💡";
+      if (type === "success") icon = "🎉";
+      if (type === "error") icon = "❌";
+      toast.innerHTML = `<span>${icon}</span> <span>${text}</span>`;
+      box.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.transition = "opacity 0.3s, transform 0.3s";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(-15px)";
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // 管理員登入
+    async function doAdminLogin() {
+      const idNo = document.getElementById('adminIdNumber').value.trim().toUpperCase();
+      const bDate = document.getElementById('adminBirthDate').value;
+      const btn = document.getElementById('btnAdminLogin');
+
+      if (!idNo || !bDate) {
+        showToast("請輸入管理員身分證字號與出生日期！", "error");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "驗證審核權限中...";
+
+      try {
+        const res = await callGasApi("verifyAdmin", { idNumber: idNo, birthDate: bDate });
+        btn.disabled = false;
+        btn.innerText = "🔐 驗證權限並登入後台";
+
+        if (res.status !== "success") {
+          showToast(res.message || "身分驗證失敗或您不具備管理員權限！", "error");
+          return;
+        }
+
+        currentAdmin = { ...res.admin, idNumber: idNo, birthDate: bDate };
+        showToast("管理員身分確認成功！正在載入後台數據...", "success");
+
+        document.getElementById('adminLoginCard').style.display = "none";
+        document.getElementById('adminDashboardCard').style.display = "block";
+        document.getElementById('dspAdminName').innerText = currentAdmin.name + " 的審核後台";
+        document.getElementById('dspAdminId').innerText = currentAdmin.idNumber.substring(0, 4) + "****" + currentAdmin.idNumber.slice(-2);
+        document.getElementById('dspAdminUnit').innerText = currentAdmin.unit || "原資中心";
+
+        // 儲存 session
+        sessionStorage.setItem("actirc_admin_id", idNo);
+        sessionStorage.setItem("actirc_admin_dob", bDate);
+
+        await loadAdminDashboard();
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerText = "🔐 驗證權限並登入後台";
+        showToast("連線異常：" + err.toString(), "error");
+      }
+    }
+
+    // 載入審核後台資料
+    async function loadAdminDashboard(silent = false) {
+      if (!currentAdmin) return;
+      if (!silent) {
+        document.getElementById('adminRecordsTbody').innerHTML = `<tr><td colspan="7" style="text-align: center; color: #888; padding: 30px;">載入審核資料中...</td></tr>`;
+      }
+
+      try {
+        const res = await callGasApi("getAdminDashboard", {
+          idNumber: currentAdmin.idNumber,
+          birthDate: currentAdmin.birthDate
+        });
+
+        if (res.status !== "success") {
+          showToast(res.message || "取得審核資料失敗", "error");
+          return;
+        }
+
+        allRecords = res.records || [];
+        updateStats(res.stats || {});
+        populateCategoryFilter();
+        applyFilters();
+
+        if (silent) showToast("審核清單已更新！", "success");
+      } catch (err) {
+        showToast("更新後台失敗：" + err.toString(), "error");
+      }
+    }
+
+    // 更新統計指標
+    function updateStats(stats) {
+      let pending = 0, approved = 0, rejected = 0;
+      allRecords.forEach(r => {
+        if (r.status === "通過" || r.status === "已審核") approved++;
+        else if (r.status === "不通過") rejected++;
+        else pending++;
+      });
+
+      document.getElementById('statPendingCount').innerText = pending;
+      document.getElementById('statApprovedCount').innerText = approved;
+      document.getElementById('statRejectedCount').innerText = rejected;
+      document.getElementById('statTotalCount').innerText = allRecords.length;
+    }
+
+    // 填充電腦分類下拉選單
+    function populateCategoryFilter() {
+      const catSelect = document.getElementById('filterCategory');
+      const currentVal = catSelect.value;
+      catSelect.innerHTML = '<option value="ALL">全部分類</option>';
+      
+      const set = new Set();
+      allRecords.forEach(r => {
+        if (r.courseClass) set.add(r.courseClass.split('>')[0].trim());
+        if (r.unit) set.add(r.unit.trim());
+      });
+
+      set.forEach(c => {
+        if (!c) return;
+        const opt = document.createElement('option');
+        opt.value = c; opt.innerText = c;
+        catSelect.appendChild(opt);
+      });
+      catSelect.value = currentVal || "ALL";
+    }
+
+    // 多重篩選與即時搜尋
+    function applyFilters() {
+      const statusFilter = document.getElementById('filterStatus').value;
+      const kw = document.getElementById('searchKeyword').value.trim().toLowerCase();
+      const catFilter = document.getElementById('filterCategory').value;
+
+      const filtered = allRecords.filter(r => {
+        // 狀態篩選
+        if (statusFilter !== "ALL") {
+          if (statusFilter === "待審核" && (r.status === "通過" || r.status === "已審核" || r.status === "不通過")) return false;
+          if (statusFilter === "通過" && (r.status !== "通過" && r.status !== "已審核")) return false;
+          if (statusFilter === "不通過" && r.status !== "不通過") return false;
+        }
+
+        // 分類篩選
+        if (catFilter !== "ALL") {
+          const inClass = r.courseClass && r.courseClass.includes(catFilter);
+          const inUnit = r.unit && r.unit.includes(catFilter);
+          if (!inClass && !inUnit) return false;
+        }
+
+        // 關鍵字搜尋
+        if (kw) {
+          const matchName = r.name && r.name.toLowerCase().includes(kw);
+          const matchId = r.idNumber && r.idNumber.toLowerCase().includes(kw);
+          const matchCourse = r.courseName && r.courseName.toLowerCase().includes(kw);
+          const matchUnit = r.unit && r.unit.toLowerCase().includes(kw);
+          if (!matchName && !matchId && !matchCourse && !matchUnit) return false;
+        }
+
+        return true;
+      });
+
+      document.getElementById('filteredCount').innerText = filtered.length;
+      renderTable(filtered);
+    }
+
+    // 渲染表格
+    function renderTable(records) {
+      const tbody = document.getElementById('adminRecordsTbody');
+      tbody.innerHTML = "";
+
+      if (!records || records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #888; padding: 35px;">查無符合條件的申報紀錄</td></tr>`;
+        return;
+      }
+
+      records.forEach(r => {
+        const tr = document.createElement('tr');
+
+        let badgeClass = "badge-pending";
+        let statusText = r.status || "待審核";
+        if (statusText === "通過" || statusText === "已審核") {
+          badgeClass = "badge-approved";
+          statusText = "已通過";
+        } else if (statusText === "不通過") {
+          badgeClass = "badge-rejected";
+        }
+
+        // 佐證照片按鈕
+        let proofHtml = `<span style="color: #999; font-size: 12px;">無佐證檔案</span>`;
+        if (r.fileUrl && r.fileUrl.startsWith("http")) {
+          proofHtml = `
+            <div style="margin-top: 4px;">
+              <button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 11px;" onclick="viewProofImage('${r.fileUrl}', '${r.courseName}')">
+                📷 預覽佐證
+              </button>
+              <a href="${r.fileUrl}" target="_blank" style="font-size: 11px; margin-left: 6px; color: #1a73e8;">開新視窗</a>
+            </div>
+          `;
+        }
+
+        // 審核操作按鈕
+        let actionButtons = `
+          <div style="display: flex; gap: 6px; justify-content: center;">
+            <button class="btn btn-success btn-sm" title="核定通過" onclick="confirmReview('${r.recordId}', '${r.name}', '${r.courseName}', '通過')">
+              ✅ 通過
+            </button>
+            <button class="btn btn-danger btn-sm" title="否決申請" onclick="confirmReview('${r.recordId}', '${r.name}', '${r.courseName}', '不通過')">
+              ❌ 不通過
+            </button>
+          </div>
+        `;
+
+        tr.innerHTML = `
+          <td>
+            <strong>${r.name}</strong><br>
+            <small style="color: #666;">${r.idNumber}</small><br>
+            <small style="color: #1a73e8;">${r.unit || '-'}</small>
+          </td>
+          <td>
+            <strong>${r.courseName}</strong>
+            ${proofHtml}
+          </td>
+          <td style="font-size: 13px;">
+            ${r.courseClass || '-'}
+          </td>
+          <td style="font-size: 12px; color: #555;">
+            起：${r.startTime || '-'}<br>
+            迄：${r.endTime || '-'}
+          </td>
+          <td style="text-align: right; font-weight: bold; color: #1a73e8; font-size: 15px;">
+            ${r.hours}
+          </td>
+          <td style="text-align: center;">
+            <span class="badge ${badgeClass}">${statusText}</span>
+          </td>
+          <td>
+            ${actionButtons}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 開啟佐證預覽
+    function viewProofImage(url, title) {
+      document.getElementById('imageModalTitle').innerText = title + " - 佐證文件";
+      const img = document.getElementById('imageModalImg');
+      img.src = url;
+      document.getElementById('imageModalOpenNew').href = url;
+      document.getElementById('imageModal').style.display = "flex";
+    }
+
+    function closeImageModal(e) {
+      if (e.target.id === 'imageModal') closeImageModalDirect();
+    }
+    function closeImageModalDirect() {
+      document.getElementById('imageModal').style.display = "none";
+      document.getElementById('imageModalImg').src = "";
+    }
+
+    // 審核確認彈窗
+    function confirmReview(recId, studentName, courseName, newStatus) {
+      const isPass = newStatus === "通過";
+      document.getElementById('confirmIcon').innerText = isPass ? "✅" : "⚠️";
+      document.getElementById('confirmTitle').innerText = isPass ? "核准此筆時數申報" : "否決此筆時數申報";
+      document.getElementById('confirmMessage').innerHTML = `
+        學員姓名：<strong>${studentName}</strong><br>
+        課程名稱：<strong>${courseName}</strong><br><br>
+        確定要將此紀錄之審核結果設定為「<span style="color: ${isPass ? '#1e8e3e' : '#d93025'}; font-weight: bold;">${newStatus}</span>」嗎？
+      `;
+
+      const btn = document.getElementById('btnConfirmExecute');
+      btn.className = isPass ? "btn btn-success" : "btn btn-danger";
+      btn.innerText = `確認${newStatus}`;
+      btn.onclick = function() {
+        closeConfirmModal();
+        executeSetStatus(recId, newStatus);
+      };
+
+      document.getElementById('confirmModal').style.display = "flex";
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').style.display = "none";
+    }
+
+    // 執行狀態寫入 GAS
+    async function executeSetStatus(recId, newStatus) {
+      showToast(`正在將審核狀態更新為「${newStatus}」...`, "info");
+      try {
+        const res = await callGasApi("setRecordStatus", {
+          idNumber: currentAdmin.idNumber,
+          birthDate: currentAdmin.birthDate,
+          recordId: recId,
+          newStatus: newStatus
+        });
+
+        if (res.status === "success") {
+          showToast(res.message || "審核狀態已成功更新！", "success");
+          // 本地即時更新
+          const item = allRecords.find(r => r.recordId === recId);
+          if (item) {
+            item.status = newStatus;
+          }
+          updateStats();
+          applyFilters();
+        } else {
+          showToast(res.message || "審核更新失敗！", "error");
+        }
+      } catch (err) {
+        showToast("審核提交失敗：" + err.toString(), "error");
+      }
+    }
+
+    // 登出
+    function doAdminLogout() {
+      currentAdmin = null;
+      allRecords = [];
+      sessionStorage.removeItem("actirc_admin_id");
+      sessionStorage.removeItem("actirc_admin_dob");
+      document.getElementById('adminDashboardCard').style.display = "none";
+      document.getElementById('adminLoginCard').style.display = "block";
+      document.getElementById('adminIdNumber').value = "";
+      document.getElementById('adminBirthDate').value = "";
+      showToast("已安全登出管理員後台！", "info");
+    }
+
+    // 頁面初始化檢查 session
+    window.onload = function() {
+      const cachedId = sessionStorage.getItem("actirc_admin_id");
+      const cachedDob = sessionStorage.getItem("actirc_admin_dob");
+      if (cachedId && cachedDob) {
+        document.getElementById('adminIdNumber').value = cachedId;
+        document.getElementById('adminBirthDate').value = cachedDob;
+        doAdminLogin();
+      }
+    };
+  </script>
+</body>
+</html>
